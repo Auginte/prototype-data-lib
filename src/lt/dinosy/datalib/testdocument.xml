@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d:dinosy xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+   xmlns:d='http://aurelijus.banelis.lt/dinosy'
+   xsi:schemaLocation='http://aurelijus.banelis.lt/dinosy file:/home/aurelijus/Documents/DiNoSy/DataLib/src/lt/dinosy/datalib/dinosy.xsd'>
+   <d:sources>
+       <d:project id="6" date="2008-05-03T00:12:13" address="/home/lampp/htdocs/afigena.info/" owner="Aurelijus Banelis">WapSite.lt</d:project>
+       <d:book id="1" date="2011-04-03T00:00:00" page="15">Kažkokia knyga</d:book>
+       <d:internet id="2" date="2010-05-03T00:12:14" parentId="1">http://wapsite.lt</d:internet>
+       <d:event id="3" date="2010-05-03T18:12:14" place="Namai"/>
+       <d:model id="4" date="2010-05-03T18:12:18" language="php" parentId="6">_system/labas.php</d:model>
+       <d:model id="5" date="2010-05-04T18:12:18" language="php" parentId="6">_system/ate.php</d:model>
+   </d:sources>
+    <d:data since="1.2.3">
+        <d:plain id="1" sourceId="1">Vienas</d:plain>
+        <d:class id="2" sourceId="4">
+            <d:name>Du</d:name>
+            <d:attribute>+labas: String</d:attribute>
+            <d:method>~hello(a: int): void</d:method>
+        </d:class>
+        <d:link id="3" sourceId="4" url="http://wapsite.lt">labas</d:link>
+    </d:data>
+    <d:relations>
+        <d:relation from="1" to="2" type="generalization"/>
+    </d:relations>
+    <d:representations>
+        <d:element dataId="1">
+            <d:position>1 2 3</d:position>
+            <d:size>10 20</d:size>
+        </d:element>
+        <d:element dataId="2">
+            <d:position>3 4 5</d:position>
+            <d:size>40 5</d:size>
+        </d:element>
+        <d:placeholder dataId="3"/>
+    </d:representations>
+</d:dinosy>

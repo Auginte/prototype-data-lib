@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:d="http://aurelijus.banelis.lt/dinosy"
+    targetNamespace="http://aurelijus.banelis.lt/dinosy"
+    elementFormDefault="qualified">
+    <xs:element name="dinosy" type="d:dinosyTag">
+        <xs:key name="sourceId">
+            <xs:selector xpath="d:sources/*"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <xs:keyref name="sourceParent" refer="d:sourceId">
+            <xs:selector xpath="d:sources/*"/>
+            <xs:field xpath="@parentId"/>
+        </xs:keyref>
+        <xs:keyref name="dataToSource" refer="d:sourceId">
+            <xs:selector xpath="d:data/*"/>
+            <xs:field xpath="@sourceId"/>
+        </xs:keyref>
+        <xs:key name="dataId">
+            <xs:selector xpath="d:data/*"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <xs:keyref name="relationFrom" refer="d:dataId">
+            <xs:selector xpath="d:relations/d:relation"/>
+            <xs:field xpath="@from"/>
+        </xs:keyref>
+        <xs:keyref name="relationTo" refer="d:dataId">
+            <xs:selector xpath="d:relations/d:relation"/>
+            <xs:field xpath="@to"/>
+        </xs:keyref>
+        <xs:keyref name="representationToData" refer="d:dataId">
+            <xs:selector xpath="d:representations/*"/>
+            <xs:field xpath="@dataId"/>
+        </xs:keyref>
+    </xs:element>
+    
+    <xs:complexType name="dinosyTag">
+        <xs:sequence>
+            <xs:element name="sources" type="d:sourcesTag"/>
+            <xs:element name="data" type="d:dataTag"/>
+            <xs:element name="relations" type="d:relationsTag" minOccurs="0"/>
+            <xs:element name="representations" type="d:representationsTag"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- General section -->
+    <xs:complexType name="sectionTag">
+        <xs:complexContent>
+            <xs:extension base="xs:anyType">
+                <xs:attribute name="since" type="d:version" default="1.1.1"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:simpleType name="version">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d+\.\d+\.\d+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Sources -->
+    <xs:complexType name="sourcesTag">
+        <xs:complexContent>
+            <xs:restriction base="d:sectionTag">
+                <xs:sequence>
+                    <xs:element name="project" type="d:projectTag" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="event" type="d:eventTag" minOccurs="0"/>
+                        <xs:element name="model" type="d:modelTag" minOccurs="0"/>
+                        <xs:element name="book" type="d:bookTag" minOccurs="0"/>
+                        <xs:element name="internet" type="d:internetTag" minOccurs="0"/>
+                        <xs:element name="okular" type="d:okularTag"/>
+                        <xs:element name="dinosy" type="d:dinosySourceTag" minOccurs="0"/>
+                    </xs:choice>
+                </xs:sequence>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="sourceTag">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="id" type="xs:nonNegativeInteger" use="required"/>
+                <xs:attribute name="parentId" type="xs:integer"/>
+                <xs:attribute name="date" type="xs:dateTime" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="projectTag">
+        <xs:simpleContent>
+            <xs:extension base="d:sourceTag">
+                <xs:attribute name="address" type="xs:string"/>
+                <xs:attribute name="owner" type="xs:string"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="eventTag">
+        <xs:simpleContent>
+            <xs:extension base="d:sourceTag">
+                <xs:attribute name="place" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="modelTag">
+        <xs:simpleContent>
+            <xs:extension base="d:sourceTag">
+                <xs:attribute name="language" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="php"/>
+                            <xs:enumeration value="java"/>
+                            <xs:enumeration value="c++"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="bookTag">
+        <xs:simpleContent>
+            <xs:extension base="d:sourceTag">
+                <xs:attribute name="page" type="xs:nonNegativeInteger" use="required"/>
+                <xs:attribute name="isbn">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="\d{9}[\d|x]"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="okularTag">
+        <xs:simpleContent>
+            <xs:extension base="d:bookTag">
+                <xs:attribute name="position">
+                    <xs:simpleType>
+                        <xs:list itemType="xs:float"/>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="internetTag">
+        <xs:simpleContent>
+            <xs:extension base="d:sourceTag">
+                <xs:attribute name="xpath" type="xs:string"/>
+                <xs:attribute name="title" type="xs:string"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="dinosySourceTag">
+        <xs:simpleContent>
+            <xs:extension base="xs:anySimpleType">
+                <xs:attribute name="type" default="include">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="include"/>
+                            <xs:enumeration value="link"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <!-- Data -->
+    <xs:complexType name="dataTag">
+        <xs:complexContent >
+            <xs:restriction base="d:sectionTag">
+                <xs:choice maxOccurs="unbounded">
+                    <xs:element name="plain" type="d:dataElementTag"/>
+                    <xs:element name="link" type="d:linkDataTag"/>
+                    <xs:element name="image" type="d:imageDataTag"/>
+                    <xs:element name="class" type="d:classDataTag"/>
+                </xs:choice>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:attributeGroup name="dataElementAttributes">
+        <xs:attribute name="id" type="xs:positiveInteger" use="required"/>
+        <xs:attribute name="parent" type="xs:integer" default="-1"/>
+        <xs:attribute name="sourceId" type="xs:positiveInteger" use="required"/>
+    </xs:attributeGroup>
+    <xs:complexType name="dataElementTag">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attributeGroup ref="d:dataElementAttributes"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="classDataTag">
+        <xs:complexContent>
+            <xs:restriction base="xs:anyType">
+                <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="extend" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="implement" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="attribute" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="method" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+                <xs:attributeGroup ref="d:dataElementAttributes"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="linkDataTag">
+        <xs:simpleContent>
+            <xs:extension base="d:dataElementTag">
+                <xs:attribute name="url" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:pattern value="\w+://[^\s]+"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:complexType name="imageDataTag">
+        <xs:simpleContent>
+            <xs:extension base="d:dataElementTag">
+                <xs:attribute name="cached" type="xs:string"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <!-- Relations -->
+    <xs:complexType name="relationsTag">
+        <xs:complexContent>
+            <xs:restriction base="d:sectionTag">
+                <xs:sequence>
+                    <xs:element name="relation" type="d:relationTag" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="relationTag">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="from" type="xs:integer" use="required"/>
+                <xs:attribute name="to" type="xs:integer" use="required"/>
+                <xs:attribute name="type" type="d:relationType" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    <xs:simpleType name="relationType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="generalization"/>
+            <xs:enumeration value="trace"/>
+            <xs:enumeration value="group"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Representation -->
+    <xs:complexType name="representationsTag">
+        <xs:complexContent>
+            <xs:restriction base="d:sectionTag">
+                <xs:choice maxOccurs="unbounded">
+                    <xs:element name="element" type="d:representationTag"/>
+                    <xs:element name="placeholder" type="d:placeHolderTag"/>
+                </xs:choice>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="placeHolderTag">
+        <xs:complexContent>
+            <xs:restriction base="xs:anyType">
+                <xs:attribute name="dataId" type="xs:positiveInteger" use="required"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="representationTag">
+        <xs:complexContent>
+            <xs:extension base="d:placeHolderTag">
+                <xs:sequence>
+                    <xs:element name="position" type="d:positionType"/>
+                    <xs:element name="size" type="d:sizeType"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:simpleType name="positionType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="-?\d+\.?\d*\s-?\d+\.?\d*\s\d+\.?\d*"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="sizeType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d+\.?\d*\s\d+\.?\d*"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
