@@ -136,8 +136,7 @@ public class Okular {
     {
         String lastLine = "";
         try {
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(command);
+            Process proc = Runtime.getRuntime().exec(command);
             String line = null;
             BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
             while ( (line = br.readLine()) != null) {

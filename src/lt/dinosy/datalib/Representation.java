@@ -65,6 +65,7 @@ public abstract class Representation {
         private Point2D position;
         private Dimension2D size;
         private double z;
+        private boolean mainIdea = false;
 
         public Element(org.w3c.dom.Element element) {
             super(element);
@@ -78,13 +79,15 @@ public abstract class Representation {
                     size = new DoubleDimention(Double.valueOf(sizeData[0]), Double.valueOf(sizeData[1]));
                 }
             }
+            mainIdea = Boolean.parseBoolean(element.getAttribute("mainIdea"));
         }
 
-        public Element(Data data, Point2D position, double z, Dimension2D size, Object assigned) {
+        public Element(Data data, Point2D position, double z, Dimension2D size, boolean mainIdea, Object assigned) {
             super(data.getId());
             this.position = position;
             this.z = z;
             this.size = size;
+            this.mainIdea = mainIdea;
             setAssigned(assigned);
         }
 

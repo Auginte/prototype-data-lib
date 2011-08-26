@@ -85,7 +85,7 @@ public class Firefox {
         save.start();
     }
 
-    private void download(String address, String to) {
+    public static void download(String address, String to) {
         FileOutputStream fos = null;
         try {
             URL addressUrl = new URL(address);
@@ -101,7 +101,6 @@ public class Firefox {
                 Logger.getLogger(Firefox.class.getName()).log(Level.SEVERE, "Error downloading: " + address + " to " + to, ex);
             }
         }
-
     }
 
     private String generateURL(String url) throws UnsupportedEncodingException {

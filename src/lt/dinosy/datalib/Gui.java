@@ -14,12 +14,21 @@ import lt.dinosy.datalib.Representation.Element;
 import org.xml.sax.SAXException;
 
 /**
- * Graphical user interface interation
+ * Graphical user interface integration
  *
  * @author Aurelijus Banelis
  */
 public class Gui {
+    public static Settings settings = new Settings();
+    
     public static void main(String[] args) {
+        try {
+            settings.load();
+        } catch (Exception ex) {
+            System.err.println("Can not read settings file");
+            ex.printStackTrace(System.err);
+        }
+        System.out.println(settings.currentPorject);
         if (args.length >= 11 && args[0].equalsIgnoreCase("import")) {
             parseFirefoxImport(args);
         } else if (args.length >= 2 && args[0].equalsIgnoreCase("help")) {

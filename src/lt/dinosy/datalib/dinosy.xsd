@@ -275,6 +275,7 @@
                     <xs:element name="position" type="d:positionType"/>
                     <xs:element name="size" type="d:sizeType"/>
                 </xs:sequence>
+                <xs:attribute name="mainIdea" type="xs:boolean" default="false"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

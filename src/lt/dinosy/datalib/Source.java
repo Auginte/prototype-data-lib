@@ -59,6 +59,12 @@ public abstract class Source {
     public Date getDate() {
         return date;
     }
+    
+    public String getDateSting() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return dateFormat.format(date);
+    }
 
     public int getId() {
         return id;
@@ -162,6 +168,15 @@ public abstract class Source {
                 element.setAttribute("place", "");
             }
             element.appendChild(document.createTextNode(name));
+        }
+
+        @Override
+        public String toString() {
+            if (name.length() < 1) {
+                return "Event: " + getDateSting();
+            } else {
+                return super.toString();
+            }
         }
     };
 
