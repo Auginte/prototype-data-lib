@@ -1,7 +1,5 @@
 package lt.dinosy.datalib;
 
-import java.awt.Dimension;
-import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,8 +51,8 @@ public class Controller {
     private Element xmlRepresentations;
     private Element xmlRelations;
     private static final String dinosyNS = "http://aurelijus.banelis.lt/dinosy";
-    private Map<Integer, Data> data = new HashMap<Integer, Data>();
-    private Map<Integer, Source> sources = new HashMap<Integer, Source>();
+    private Map<Integer, Data> data;
+    private Map<Integer, Source> sources;
     private static int lastSourceId = 0;
     private static int lastDataId = 0;
     private boolean valid = true;
@@ -65,12 +63,13 @@ public class Controller {
     private Set<Source> sourcesSet;
     private Transformer transformer;
     public final static int defaultParentId = -1;
-
+    
     public boolean openFile(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
         File file = new File(fileAddress);
 
         document = validate(file, Controller.class.getResourceAsStream("dinosy.xsd"));
         if (valid) {
+            clear();
             checkVersions();
             parseSource();
             parseData();
@@ -82,7 +81,10 @@ public class Controller {
         return valid;
     }
 
-
+    private void clear() {
+        data = new HashMap<Integer, Data>();
+        sources = new HashMap<Integer, Source>();
+    }
 
     /*
      * Format
@@ -156,6 +158,9 @@ public class Controller {
         }
     }
 
+    /**
+     * Return qualified name of element
+     */
     public static String getRealNodeName(Node node) {
         if (node.getPrefix() != null) {
             return node.getNodeName().substring(node.getPrefix().length() + 1);
@@ -232,10 +237,9 @@ public class Controller {
 
     private void parseRelations() {
         if (xmlRelations != null) {
-            for (int i= 0; i < xmlRelations.getChildNodes().getLength(); i++) {
-                Node item = xmlRelations.getChildNodes().item(i);
-                if (item instanceof Element && item.getNamespaceURI().equals(dinosyNS)) {
-                    Relation relation = Relation.getInstance(item, data);
+            for (Element element : subElements(xmlRelations)) {
+                if (element.getNamespaceURI().equals(dinosyNS)) {
+                    Relation relation = Relation.getInstance(element, data);
                     data.get(relation.getFrom().getId()).addRelation(relation);
                     data.get(relation.getTo().getId()).addRelation(relation);
                 }
@@ -247,6 +251,7 @@ public class Controller {
         for (Element element : subElements(xmlRepresentations)) {
             if (element.getNamespaceURI().equals(dinosyNS)) {
                 Representation representation = Representation.getInstance(element);
+                representation.resovleData(data);
                 data.get(representation.getDataId()).addRepresentation(representation);
             }
         }
@@ -270,6 +275,7 @@ public class Controller {
 
     //TODO: save all, not just part, keeping all data and all sources
     public void save(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException {
+        clear();
         this.dataList = data;
         this.representations = representations;
         leaveUniqueData();
@@ -449,6 +455,7 @@ public class Controller {
         if ((new File(file)).exists()) {
             openFile(file);
         } else {
+            clear();
             createEmptyDocument();
         }
         dataList = data;

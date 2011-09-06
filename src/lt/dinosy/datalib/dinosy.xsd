@@ -227,28 +227,34 @@
     <xs:complexType name="relationsTag">
         <xs:complexContent>
             <xs:restriction base="d:sectionTag">
-                <xs:sequence>
-                    <xs:element name="relation" type="d:relationTag" minOccurs="0" maxOccurs="unbounded"/>
-                </xs:sequence>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="generalization" type="d:relationTag"/>
+                    <xs:element name="association" type="d:associantionTag"/>
+                </xs:choice>
             </xs:restriction>
         </xs:complexContent>
     </xs:complexType>
+    <xs:attributeGroup name="relationAttributes">
+        <xs:attribute name="from" type="xs:integer" use="required"/>
+        <xs:attribute name="to" type="xs:integer" use="required"/>
+    </xs:attributeGroup>
     <xs:complexType name="relationTag">
-        <xs:simpleContent>
-            <xs:extension base="xs:string">
-                <xs:attribute name="from" type="xs:integer" use="required"/>
-                <xs:attribute name="to" type="xs:integer" use="required"/>
-                <xs:attribute name="type" type="d:relationType" use="required"/>
+        <xs:complexContent>
+            <xs:extension base="xs:anyType">
+                <xs:attributeGroup ref="d:relationAttributes"/>
             </xs:extension>
-        </xs:simpleContent>
+        </xs:complexContent>
     </xs:complexType>
-    <xs:simpleType name="relationType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="generalization"/>
-            <xs:enumeration value="trace"/>
-            <xs:enumeration value="group"/>
-        </xs:restriction>
-    </xs:simpleType>
+    <xs:complexType name="associantionTag">
+        <xs:complexContent>
+            <xs:restriction base="d:relationTag">
+                <xs:sequence>
+                    <xs:element name="arrowTo" type="xs:string"/>
+                </xs:sequence>
+                <xs:attributeGroup ref="d:relationAttributes"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
 
     <!-- Representation -->
     <xs:complexType name="representationsTag">

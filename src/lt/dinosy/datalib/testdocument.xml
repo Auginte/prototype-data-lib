@@ -20,7 +20,10 @@
         <d:link id="3" sourceId="4" url="http://wapsite.lt">labas</d:link>
     </d:data>
     <d:relations>
-        <d:relation from="1" to="2" type="generalization"/>
+        <d:generalization from="1" to="2"/>
+        <d:association from="2" to="3">
+            <d:arrowTo>Pavadinimas</d:arrowTo>
+        </d:association>
     </d:relations>
     <d:representations>
         <d:element dataId="1">

@@ -5,19 +5,19 @@ import java.lang.reflect.Constructor;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 import static lt.dinosy.datalib.Controller.subElements;
 import static lt.dinosy.datalib.Controller.getRealNodeName;
 
 /**
  * Representation of data.
- * There can be meny represenations for one data,
- * or represenation can group data
+ * There can be many representations for one data,
+ * or representation can group data
  *
  * @author Aurelijus Banelis
  */
 public abstract class Representation {
     private int dataId;
+    private Data data;
     private Object assigned;
 
     private Representation(int dataId) {
@@ -28,10 +28,22 @@ public abstract class Representation {
         this.dataId = Integer.parseInt(element.getAttribute("dataId"));
     }
 
-    public int getDataId() {
-        return dataId;
+    int getDataId() {
+        if (data == null) {
+            return dataId;
+        } else {
+            return data.getId();
+        }
     }
 
+    public Data getData() {
+        return data;
+    }
+    
+    public void resovleData(Map<Integer, Data> map) {
+        data = map.get(dataId);
+    }
+    
     void translateDataId(int length) {
         dataId += length;
     }
@@ -177,17 +189,5 @@ public abstract class Representation {
             this.height = height;
         }
 
-    }
-
-    private static Node getElement(String name, Node parent) {
-        for (int i= 0; i < parent.getChildNodes().getLength(); i++) {
-            Node item = parent.getChildNodes().item(i);
-            if (item instanceof org.w3c.dom.Element) {
-                if (Controller.getRealNodeName(item).equals(name)) {
-                    return item;
-                }
-            }
-        }
-        return null;
     }
 }

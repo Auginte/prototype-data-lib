@@ -113,7 +113,7 @@ public abstract class Data {
     public List<Relation> getRelations() {
         return relations;
     }
-
+    
     public void addRepresentation(Representation representation) {
         representations.add(representation);
     }

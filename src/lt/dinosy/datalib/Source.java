@@ -1,11 +1,7 @@
 package lt.dinosy.datalib;
 
-import java.awt.geom.Dimension2D;
-import java.awt.geom.Point2D;
 import java.util.SimpleTimeZone;
 import java.util.Calendar;
-import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.lang.reflect.Constructor;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -18,7 +14,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import static lt.dinosy.datalib.Controller.getRealNodeName;
 
 /**
  * Representing source of gathered data or conditions of data being generated.
