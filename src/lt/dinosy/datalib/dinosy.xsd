@@ -137,6 +137,7 @@
                         <xs:list itemType="xs:float"/>
                     </xs:simpleType>
                 </xs:attribute>
+                <xs:attribute name="cachedImage" type="xs:string"/>
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>

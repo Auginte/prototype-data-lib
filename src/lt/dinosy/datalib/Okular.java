@@ -76,10 +76,11 @@ public class Okular {
                             float b = Float.parseFloat(boundary.getAttribute("b"));
                             float t = Float.parseFloat(boundary.getAttribute("t"));
 
-                            Source.Okular source = new Source.Okular(date, realDocument, page, l, r, b, t);
+                            String imagePath = imageCacheDirectory + "/" + getName() + "-" + (innerId++) + "-p" + page + ".jpg";
+                            Source.Okular.Boundary boundary1 = new Source.Okular.Boundary(l, r, t, b);
+                            Source.Okular source = new Source.Okular(date, realDocument, page, boundary1, imagePath);
 
                             if (imageCacheDirectory != null) {
-                                String imagePath = imageCacheDirectory + "/" + getName() + "-" + (innerId++) + "-p" + page + ".jpg";
                                 result.add(new Data.Image(imagePath, source));
                                 extractImage(imagePath, source);
                             } else {

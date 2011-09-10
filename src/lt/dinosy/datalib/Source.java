@@ -327,15 +327,18 @@ public abstract class Source {
 
     public static class Okular extends Book {
         private Boundary boundary;
+        private String cachedImage;
         
-        public Okular(Date date, String file, int page, Boundary boundary, String isbn, Source source) {
+        public Okular(Date date, String file, int page, Boundary boundary, String isbn, String cachedImage, Source source) {
             super(date, file, page, isbn, source);
             this.boundary = boundary;
+            this.cachedImage = cachedImage;
         }
 
-        public Okular(Date date, String file, int page, float l, float r, float b, float t) {
-            super(date, file, page, null, null);
-            boundary = new Boundary(l, r, t, b);
+        public Okular(Date date, String file, int page, Boundary boundary, String cachedImage) {
+            super(date, file, page, null, null);            
+            this.boundary = boundary;
+            this.cachedImage = cachedImage;
         }
 
         public Okular(Element element) {
@@ -344,20 +347,42 @@ public abstract class Source {
             if (position != null) {
                 boundary = new Boundary(position);
             }
+            cachedImage = element.getAttribute("cachedImage");
         }
 
         public Boundary getPosition() {
             return boundary;
         }
 
+        public String getCachedImage() {
+            if (cachedImage != null && cachedImage.length() == 0) {
+                return null;
+            } else {
+                return cachedImage;
+            }
+        }
+        
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             super.toNode(element, document, nameSpace);
             if (boundary != null) {
                 element.setAttribute("position", boundary.toString());
             }
+            if (cachedImage != null && cachedImage.length() > 0) {
+                element.setAttribute("cachedImage", cachedImage);
+            }
         }
 
+        @Override
+        public String toString() {
+            int slash = getSource().lastIndexOf(System.getProperty("file.separator"));
+            if (slash < 0) {
+                slash = 0;
+            }
+            String fileName = getSource().substring(slash).trim();
+            return fileName + ": " + getPage();
+        }
+        
         public static class Boundary {
             public float l, r, t, b;
 
@@ -380,6 +405,30 @@ public abstract class Source {
             public String toString() {
                 return l + " " + r + " " + t + " " + b;
             }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (obj == null) {  return false; }
+                if (getClass() != obj.getClass()) { return false; }
+                final Boundary other = (Boundary) obj;
+                if (Float.floatToIntBits(this.l) != Float.floatToIntBits(other.l)) { return false; }
+                if (Float.floatToIntBits(this.r) != Float.floatToIntBits(other.r)) { return false; }
+                if (Float.floatToIntBits(this.t) != Float.floatToIntBits(other.t)) { return false; }
+                if (Float.floatToIntBits(this.b) != Float.floatToIntBits(other.b)) { return false; }
+                return true;
+            }
+
+            @Override
+            public int hashCode() {
+                int hash = 7;
+                hash = 83 * hash + Float.floatToIntBits(this.l);
+                hash = 83 * hash + Float.floatToIntBits(this.r);
+                hash = 83 * hash + Float.floatToIntBits(this.t);
+                hash = 83 * hash + Float.floatToIntBits(this.b);
+                return hash;
+            }
+            
+            
         };
     }
     
@@ -483,7 +532,7 @@ public abstract class Source {
         }
     }
     
-    static String parseDate(Date date) {
+    public static String parseDate(Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         return dateFormat.format(date);
