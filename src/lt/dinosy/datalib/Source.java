@@ -318,7 +318,7 @@ public abstract class Source {
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             element.setAttribute("page", String.valueOf(page));
-            if (isbn != null) {
+            if (isbn != null && isbn.length() > 0) {
                 element.setAttribute("isbn", isbn);
             }
             element.appendChild(document.createTextNode(name));
@@ -464,6 +464,10 @@ public abstract class Source {
             return xpaht;
         }
 
+        public String getTitle() {
+            return title;
+        }
+        
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             if (xpaht != null) {

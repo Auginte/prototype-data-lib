@@ -66,7 +66,7 @@ public class Controller {
     
     public boolean openFile(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
         File file = new File(fileAddress);
-
+        
         document = validate(file, Controller.class.getResourceAsStream("dinosy.xsd"));
         if (valid) {
             clear();
@@ -76,11 +76,30 @@ public class Controller {
             parseRelations();
             parseRepresentation();
         } else if (lastException != null) {
+            debugXmlSchema();
             throw lastException;
         }
         return valid;
     }
 
+    //FIXME: gui based error validation
+    private void debugXmlSchema() {
+        try {
+            System.out.println("=== XML schema used ===");
+            InputStream resourceAsStream = Controller.class.getResourceAsStream("dinosy.xsd");
+            int b = 0;
+            do {
+                b = resourceAsStream.read();
+                if (b > -1) {
+                    System.out.print((char) b);
+                }
+            } while (b > -1);
+            System.out.println("=== End of XML schema ===");
+        } catch (IOException ex) {
+            Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, "Error dumping XML schema", ex);
+        }
+    }
+    
     private void clear() {
         data = new HashMap<Integer, Data>();
         sources = new HashMap<Integer, Source>();

@@ -121,6 +121,10 @@ public abstract class Data {
     public List<Representation> getRepresentations() {
         return representations;
     }
+    
+    public boolean removeRepresentation(Representation representation) {
+        return representations.remove(representation);
+    }
 
     /**
      * Exports data attributes to XML Element
@@ -284,6 +288,7 @@ public abstract class Data {
 
         public Image(String file, Source source) {
             this(file, null, source);
+            cached = file;
         }
 
         public String getCached() {

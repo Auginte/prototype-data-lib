@@ -288,7 +288,7 @@
     </xs:complexType>
     <xs:simpleType name="positionType">
         <xs:restriction base="xs:string">
-            <xs:pattern value="-?\d+\.?\d*\s-?\d+\.?\d*\s\d+\.?\d*"/>
+            <xs:pattern value="(([-|+]?\d+\.*\d*[e|E]?[-|+]?\d*|INF|NaN)\s?){3}"/>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="sizeType">

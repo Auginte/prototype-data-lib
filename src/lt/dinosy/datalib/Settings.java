@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,6 +60,20 @@ public class Settings {
         }
         return direcotry;
     }
+
+    public static File getDateCacheDirecotry() {
+        File directory = new File(getCurrentCacheDirecotry(), formadDate(new Date()));
+        if (!directory.isDirectory()) {
+            directory.mkdirs();
+        }
+        return directory;
+    }
+    
+    private static String formadDate(Date date) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return dateFormat.format(date);
+    }
     
     private static Settings getInstance() {
         if (settingsInstance == null) {
@@ -69,4 +86,6 @@ public class Settings {
         }
         return settingsInstance;
     }
+    
+    
 }
