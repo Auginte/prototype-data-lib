@@ -283,7 +283,6 @@ public class Controller {
     public Map<Integer, Source> getSources() {
         return sources;
     }
-
     
 //##############################################################################
     

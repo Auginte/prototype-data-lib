@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.awt.Color;
 import java.util.Map;
 import java.lang.reflect.Constructor;
 import java.awt.geom.Dimension2D;
@@ -19,7 +20,7 @@ public abstract class Representation {
     private int dataId;
     private Data data;
     private Object assigned;
-
+    
     private Representation(int dataId) {
         this.dataId = dataId;
     }
@@ -78,7 +79,10 @@ public abstract class Representation {
         private Dimension2D size;
         private double z;
         private boolean mainIdea = false;
-
+        private int zIndex = 0;
+        private Color background;
+        private Color foreground;
+        
         public Element(org.w3c.dom.Element element) {
             super(element);
             for (org.w3c.dom.Element sub : subElements(element)) {
@@ -92,14 +96,19 @@ public abstract class Representation {
                 }
             }
             mainIdea = Boolean.parseBoolean(element.getAttribute("mainIdea"));
+            zIndex = Integer.parseInt(element.getAttribute("zIndex"));
+            foreground = getColor(element.getAttribute("foreground"));
+            background = getColor(element.getAttribute("background"));
         }
-
-        public Element(Data data, Point2D position, double z, Dimension2D size, boolean mainIdea, Object assigned) {
+        
+        public Element(Data data, Point2D position, double z, Dimension2D size, int zIndex, Color foreground, Color background, boolean mainIdea, Object assigned) {
             super(data.getId());
             this.position = position;
             this.z = z;
             this.size = size;
             this.mainIdea = mainIdea;
+            this.foreground = foreground;
+            this.background = background;
             setAssigned(assigned);
         }
 
@@ -114,7 +123,7 @@ public abstract class Representation {
             element.setTextContent(getSize().getWidth() + " " + getSize().getHeight());
             return element;
         }
-
+        
         public void set(Point2D position, double z, Dimension2D size) {
             this.position = position;
             this.z = z;
@@ -137,8 +146,72 @@ public abstract class Representation {
         protected void toNode(org.w3c.dom.Element element, Document document, String nameSpace) {
             element.appendChild(positionToNode(document, nameSpace));
             element.appendChild(sizeToNode(document, nameSpace));
+            if (mainIdea) {
+                element.setAttribute("mainIdea", Boolean.toString(mainIdea));
+            }
+            element.setAttribute("zIndex", Integer.toString(zIndex));
+            colorToNode(element, "foreground", foreground);
+            colorToNode(element, "background", background);
         }
 
+        
+        
+        private void colorToNode(org.w3c.dom.Element element, String key, Color color) {
+            if (color != null) {
+                String text = "#" + toHex(color.getRed()) + toHex(color.getGreen()) + toHex(color.getBlue()) + toHex(color.getAlpha());
+                element.setAttribute(key, text);
+            }
+        }
+        
+        private String toHex(int number) {
+            if (number < 16) {
+                return "0" + Integer.toHexString(number);
+            } else {
+                return Integer.toHexString(number);
+            }
+        }
+
+        private Color getColor(String text) {
+            if (text != null && text.length() == 9) {
+                int r = Integer.parseInt(text.substring(1,3), 16);
+                int g = Integer.parseInt(text.substring(3,5), 16);
+                int b = Integer.parseInt(text.substring(5,7), 16);
+                int a = Integer.parseInt(text.substring(7,9), 16);
+                return new Color(r, g, b, a);
+            } else {
+                return null;
+            }
+        }
+        
+        public int getZIndex() {
+            return zIndex;
+        }
+
+        public void setZIndex(int zIndex) {
+            this.zIndex = zIndex;
+        }
+
+        public Color getBackground() {
+            return background;
+        }
+
+        public Color getForeground() {
+            return foreground;
+        }
+
+        public void setBackground(Color background, boolean opaque) {
+            if (!opaque) {
+                background = null;
+            }
+            this.background = background;
+        }
+
+        public void setForeground(Color foreground, Color defaultForeground) {
+            if (foreground == defaultForeground) {
+                foreground = null;
+            }
+            this.foreground = foreground;
+        }
     }
 
     public static class PlaceHolder extends Representation {
