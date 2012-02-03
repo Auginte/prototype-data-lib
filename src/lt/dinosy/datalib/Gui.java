@@ -5,6 +5,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,8 +56,9 @@ public class Gui {
         String title = null;
         String xpath = null;
         String data = null;
+        String saved = null;
         try {
-            for (int i = 1; i < 11; i+=2) {
+            for (int i = 1; i < args.length - 1; i+=2) {
                 if (args[i].equalsIgnoreCase("-type")) {
                     type = Firefox.Type.valueOf(args[i+1]);
                 } else if (args[i].equalsIgnoreCase("-url")) {
@@ -66,17 +69,20 @@ public class Gui {
                     xpath = URLDecoder.decode(args[i + 1], "UTF-8");
                 } else if (args[i].equalsIgnoreCase("-data")) {
                     data = URLDecoder.decode(args[i + 1], "UTF-8");
+                } else if (args[i].equalsIgnoreCase("-saved")) {
+                    saved = URLDecoder.decode(args[i + 1], "UTF-8");
                 }
             }
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, "UTF-8 encoding should be supported", ex);
         }
-        if (type == null || url == null || title == null || xpath == null || data == null) {
-            System.out.println(errorMessage(new String[] {"-type", "-url", "-title", "-xpath", "-data"}, type, url, title, xpath, data));
+        System.out.println("saved = " + saved);
+        if (type == null || url == null || title == null || xpath == null || data == null || saved == null) {
+            System.out.println(errorMessage(new String[] {"-type", "-url", "-title", "-xpath", "-data", "-saved"}, type, url, title, xpath, data, saved));
             System.out.println(helpImportFirefox());
         } else {
-            Firefox firefox = new Firefox(type, url, title, xpath, data);
-            firefox.appendData();
+            Firefox firefox = new Firefox(type, url, title, xpath, data, saved);
+            firefox.toClipboard();
         }
     }
 
@@ -96,7 +102,8 @@ public class Gui {
                "\t<url>\tx-www-form-urlencoded url of the web page\n" +
                "\t<title>\tx-www-form-urlencoded title of the web page\n" +
                "\t<xpath>\tx-www-form-urlencoded xpath query starting from body to selected part in document\n" +
-               "\t<data>\tx-www-form-urlencoded data. If <type> image - url to image, if <type> html - selection html code\n";
+               "\t<data>\tx-www-form-urlencoded data. If <type> image - url to image, if <type> html - selection html code\n" +
+               "\t<saved>\tx-www-form-urlencoded file path without extention. saved screenshots (.png) ir page source (.html)";
     }
 
     private static String helpGlobal() {

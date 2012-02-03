@@ -1,5 +1,12 @@
 package lt.dinosy.datalib;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -9,9 +16,12 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import sun.misc.BASE64Encoder;
 
 /**
  *
@@ -23,23 +33,73 @@ public class Firefox {
     private String title;
     private String xpath;
     private String data;
+    private String saved;
+    
     //FIXME: use over configurations
     public static String webDataFile = System.getProperty("user.home") + "/.dinosy/webData.xml";
     public static String webDataCache = System.getProperty("user.home") + "/.dinosy/internetCache";
     private static final int READ_SIZE = 1024;
 
-    public Firefox(Type type, String url, String title, String xpath, String data) {
+    public Firefox(Type type, String url, String title, String xpath, String data, String saved) {
         this.type = type;
         this.url = url;
         this.title = title;
         this.xpath = xpath;
         this.data = data;
+        this.saved = saved;
     }
 
+    class SpecificSelection implements Transferable {
+        private String mime;
+        private String data;
+        private DataFlavor[] flavors;
+        
+        public SpecificSelection(String mime, String data) {
+            this.mime = mime;
+            this.data = data;
+            flavors = new DataFlavor[] { new DataFlavor(String.class, mime) };
+        }
+
+        public DataFlavor[] getTransferDataFlavors() {
+            return flavors;
+        }
+
+        public boolean isDataFlavorSupported(DataFlavor arg0) {
+            for (DataFlavor dataFlavor : flavors) {
+                if (dataFlavor.getMimeType().equalsIgnoreCase(arg0.getMimeType())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public String getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {
+            if (isDataFlavorSupported(arg0)) {
+                return data;
+            } else {
+                throw new UnsupportedFlavorException(arg0);
+            }
+        }
+        
+    }
+    
+    public void toClipboard() {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("url", url);
+        map.put("title", title);
+        map.put("xpath", xpath);
+        BASE64Encoder encoder = new BASE64Encoder();
+        map.put("data", encoder.encode(data.getBytes()));
+        map.put("saved", saved);
+        map.put("type", type.name());
+        map.put("date", Source.parseDate(new Date()));
+        PsiaudoClipboard.addToClipboard(map, "DiNoSy Firefox");
+    }
+    
     public void appendData() {
         Controller controller = new Controller();
         List<Data> dataList = new ArrayList<Data>(1);
-        Source source = new Source.Internet(new Date(), url, xpath, title, null);
+        Source source = new Source.Internet(new Date(), url, xpath, title, saved, null);
         try {
             if (type == Type.image) {
                 dataList.add(new Data.Image(data, generateURL(data), source));

@@ -436,12 +436,14 @@ public abstract class Source {
         private String url;
         private String xpaht = null;
         private String title = null;
+        private String saved = null;
 
-        public Internet(Date date, String url, String xpaht, String title, Source source) {
+        public Internet(Date date, String url, String xpaht, String title, String saved, Source source) {
             super(date, source);
             this.url = url;
             this.xpaht = xpaht;
             this.title = title;
+            this.saved = saved;
         }
 
         public Internet(String url) {
@@ -467,11 +469,19 @@ public abstract class Source {
         public String getTitle() {
             return title;
         }
+
+        public String getSaved() {
+            return saved;
+        }
         
+                
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             if (xpaht != null) {
                 element.setAttribute("xpath", xpaht);
+            }
+            if (saved != null) {
+                element.setAttribute("saved", saved);
             }
             element.appendChild(document.createTextNode(url));
         }
@@ -524,7 +534,7 @@ public abstract class Source {
         return (Source) Controller.getInstance(types, element);
     }
     
-    static Date parseDate(String date) {
+    public static Date parseDate(String date) {
         java.util.Calendar cal = Calendar.getInstance(new SimpleTimeZone(0, "GMT"));
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         dateFormat.setCalendar(cal);
