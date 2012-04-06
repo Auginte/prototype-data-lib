@@ -34,6 +34,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.ProcessingInstruction;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -373,7 +374,11 @@ public class Controller {
         String schemaNS = "http://www.w3.org/2001/XMLSchema-instance";
         dinosy.setAttributeNS(schemaNS, "schemaLocation", dinosyNS + " file:/home/aurelijus/Documents/DiNoSy/DataLib/src/lt/dinosy/datalib/dinosy.xsd");
         document.appendChild(dinosy);
-
+        
+//        /* Stilesheet (XSL Transformation) */
+//        ProcessingInstruction pi = document.createProcessingInstruction("xml-stylesheet", "href=\"http://aurelijus.banelis.lt/dinosy/transf.xsl\" type=\"text/xsl\"");
+//        dinosy.getParentNode().insertBefore(pi, dinosy);
+        
         /* Sources */
         xmlSources = document.createElementNS(dinosyNS, "sources");
         xmlSources.setAttribute("since", "1.1.1");
@@ -449,9 +454,8 @@ public class Controller {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         }
-        StringWriter sw = new StringWriter();
         StreamResult result = new StreamResult(new File(file));
-        transformer.transform(new DOMSource(document.getDocumentElement()), result);
+        transformer.transform(new DOMSource(document), result);
     }
     
     public static int getNewSourceId() {

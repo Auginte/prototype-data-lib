@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.io.Serializable;
 import java.util.SimpleTimeZone;
 import java.util.Calendar;
 import java.lang.reflect.Constructor;
@@ -19,8 +20,9 @@ import org.w3c.dom.Element;
  * Representing source of gathered data or conditions of data being generated.
  *
  * @author Aurelijus Banelis
+ * @todo Serialize all
  */
-public abstract class Source {
+public abstract class Source implements Serializable {
     private int id;
     private Date date;
     private int parentId = Controller.defaultParentId;

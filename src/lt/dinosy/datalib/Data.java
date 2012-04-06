@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +14,9 @@ import static lt.dinosy.datalib.Controller.getRealNodeName;
  *
  *
  * @author Aurelijus Banelis
+ * @todo Serialize all
  */
-public abstract class Data {
+public abstract class Data implements Serializable {
     private int id;
     private int parentId;
     private Data parent;

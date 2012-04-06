@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.Map;
 import org.w3c.dom.Document;
@@ -11,8 +12,9 @@ import static lt.dinosy.datalib.Controller.getRealNodeName;
  * Logical (not only graphical) relations between data
  *
  * @author Aurelijus Banelis
+ * @todo Serialize all
  */
-public abstract class Relation {
+public abstract class Relation implements Serializable {
     private Data from;
     private Data to;
     private int fromId;

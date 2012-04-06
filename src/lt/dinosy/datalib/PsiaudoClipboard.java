@@ -3,15 +3,10 @@ package lt.dinosy.datalib;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.io.StringReader;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +35,7 @@ public class PsiaudoClipboard {
             writter.append("[" + getTime() + " " + comment + "]");
             writter.newLine();
             for (String key : data.keySet()) {
-                writter.append(key + ": " + data.get(key));
+                writter.append(key + ": " + data.get(key).trim());
                 writter.newLine();
             }
             writter.newLine();

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.lang.reflect.Constructor;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 import org.w3c.dom.Document;
 import static lt.dinosy.datalib.Controller.subElements;
 import static lt.dinosy.datalib.Controller.getRealNodeName;
@@ -16,10 +17,10 @@ import static lt.dinosy.datalib.Controller.getRealNodeName;
  *
  * @author Aurelijus Banelis
  */
-public abstract class Representation {
+public abstract class Representation implements Serializable {
     private int dataId;
     private Data data;
-    private Object assigned;
+    private transient Object assigned;
     
     private Representation(int dataId) {
         this.dataId = dataId;
@@ -238,7 +239,7 @@ public abstract class Representation {
         return (Representation) Controller.getInstance(types, element);
     }
 
-    private static class DoubleDimention extends Dimension2D {
+    private static class DoubleDimention extends Dimension2D implements Serializable {
         private double width;
         private double height;
         
