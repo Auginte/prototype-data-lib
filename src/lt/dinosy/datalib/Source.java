@@ -385,7 +385,7 @@ public abstract class Source implements Serializable {
             return fileName + ": " + getPage();
         }
         
-        public static class Boundary {
+        public static class Boundary implements Serializable {
             public float l, r, t, b;
 
             public Boundary(String list) {

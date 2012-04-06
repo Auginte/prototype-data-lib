@@ -9,6 +9,7 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -49,7 +50,8 @@ public class Firefox {
         this.saved = saved;
     }
 
-    class SpecificSelection implements Transferable {
+    //TODO: overthink Serializable (not only for copy and paste)
+    class SpecificSelection implements Transferable, Serializable {
         private String mime;
         private String data;
         private DataFlavor[] flavors;

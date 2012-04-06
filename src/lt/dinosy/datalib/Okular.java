@@ -39,7 +39,7 @@ public class Okular {
     private static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
     private static XPathFactory xPathFactory = XPathFactory.newInstance();
     private File infoFile;
-    private Document xmlDocument;
+    private transient Document xmlDocument;
     public static String imageCacheDirectory = System.getProperty("user.home") + "/.dinosy/cache";
     private int innerId = 1;
     private String realDocument = null;
@@ -290,7 +290,7 @@ public class Okular {
      * Enumeration utilities
      */
 
-    enum AnnotationType {
+    static enum AnnotationType {
             AText(1),      ///< A textual annotation
             ALine(2),      ///< A line annotation
             AGeom(3),      ///< A geometrical annotation
