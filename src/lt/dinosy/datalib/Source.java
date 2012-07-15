@@ -22,7 +22,7 @@ import org.w3c.dom.Element;
  * @author Aurelijus Banelis
  * @todo Serialize all
  */
-public abstract class Source implements Serializable {
+public abstract class Source implements Serializable, Cloneable {
     private int id;
     private Date date;
     private int parentId = Controller.defaultParentId;
@@ -119,7 +119,17 @@ public abstract class Source implements Serializable {
         return this.getClass().getSimpleName() + ": " + getSource();
     }
 
+    @Override
+    public Source clone() throws CloneNotSupportedException {
+        Source clone = (Source) super.clone();
+        clone.id = Controller.getNewSourceId();
+        clone.date = (Date) date.clone();
+        clone.parent = parent.clone();
+        clone.childs = new LinkedList<Source>(childs);
+        return clone;
+    }
 
+    
     /*
      * Types of data
      */
@@ -384,8 +394,16 @@ public abstract class Source implements Serializable {
             String fileName = getSource().substring(slash).trim();
             return fileName + ": " + getPage();
         }
+
+        @Override
+        public Okular clone() throws CloneNotSupportedException {
+            Okular clone = (Okular) super.clone();
+            clone.boundary = boundary.clone();
+            return clone;
+        }
         
-        public static class Boundary implements Serializable {
+        
+        public static class Boundary implements Serializable, Cloneable {
             public float l, r, t, b;
 
             public Boundary(String list) {
@@ -429,8 +447,11 @@ public abstract class Source implements Serializable {
                 hash = 83 * hash + Float.floatToIntBits(this.b);
                 return hash;
             }
-            
-            
+
+            @Override
+            public Boundary clone() throws CloneNotSupportedException {
+                return (Boundary) super.clone();
+            }
         };
     }
     

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import sun.misc.BASE64Encoder;
+import net.sourceforge.iharder.Base64;
 
 /**
  *
@@ -90,8 +90,7 @@ public class Firefox {
         map.put("url", url);
         map.put("title", title);
         map.put("xpath", xpath);
-        BASE64Encoder encoder = new BASE64Encoder();
-        map.put("data", encoder.encode(data.getBytes()));
+        map.put("data", Base64.encodeBytes(data.getBytes()));
         map.put("saved", saved);
         map.put("type", type.name());
         map.put("date", Source.parseDate(new Date()));
