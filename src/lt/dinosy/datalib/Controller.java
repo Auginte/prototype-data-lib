@@ -285,6 +285,10 @@ public class Controller {
         return sources;
     }
     
+    public boolean hasRelations() {
+        return xmlRelations != null && xmlRelations.hasChildNodes();
+    }
+    
 //##############################################################################
     
     
