@@ -335,6 +335,20 @@ public abstract class Source implements Serializable, Cloneable {
             }
             element.appendChild(document.createTextNode(name));
         }
+        
+        @Override
+        public String toString() {
+            if (getSource().endsWith(".pdf")) {
+                int slash = getSource().lastIndexOf(System.getProperty("file.separator"));
+                if (slash < 0) {
+                    slash = 0;
+                }
+                String fileName = getSource().substring(slash).trim();
+                return fileName + ": " + getPage();
+            } else {
+                return super.toString();
+            }
+        }
     }
 
     public static class Okular extends Book {
