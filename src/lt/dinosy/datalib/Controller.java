@@ -3,7 +3,6 @@ package lt.dinosy.datalib;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
@@ -34,7 +33,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.ProcessingInstruction;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -45,6 +43,7 @@ import org.xml.sax.SAXParseException;
  * @author Aurelijus Banelis
  */
 public class Controller {
+
     private DocumentBuilderFactory factory;
     private Document document;
     private Element xmlSources;
@@ -58,16 +57,15 @@ public class Controller {
     private static int lastDataId = 0;
     private boolean valid = true;
     private SAXException lastException;
-
     private Collection<Data> dataList;
     private Collection<Representation> representations;
     private Set<Source> sourcesSet;
     private Transformer transformer;
     public final static int defaultParentId = -1;
-    
+
     public boolean openFile(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
         File file = new File(fileAddress);
-        
+
         document = validate(file, Controller.class.getResourceAsStream("dinosy.xsd"));
         if (valid) {
             clear();
@@ -100,7 +98,7 @@ public class Controller {
             Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, "Error dumping XML schema", ex);
         }
     }
-    
+
     private void clear() {
         data = new HashMap<Integer, Data>();
         sources = new HashMap<Integer, Source>();
@@ -109,7 +107,6 @@ public class Controller {
     /*
      * Format
      */
-
     private Document validate(File dataFile, InputStream stream) throws ParserConfigurationException, SAXException, IOException {
         /* Validator */
         if (factory == null) {
@@ -119,7 +116,7 @@ public class Controller {
         /* Schema */
         SchemaFactory schemaFactory = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
         factory.setSchema(schemaFactory.newSchema(new javax.xml.transform.Source[]{new StreamSource(stream)}));
-        
+
         /* Validating */
         valid = true;
         lastException = null;
@@ -129,6 +126,7 @@ public class Controller {
                 valid = false;
                 lastException = exception;
             }
+
             public void error(SAXParseException exception) throws SAXException {
                 //TODO: do without workaround
                 if (!exception.getMessage().endsWith("Document is invalid: no grammar found.") && !exception.getMessage().endsWith(", must match DOCTYPE root \"null\".")) {
@@ -136,6 +134,7 @@ public class Controller {
                     lastException = exception;
                 }
             }
+
             public void fatalError(SAXParseException exception) throws SAXException {
                 valid = false;
                 lastException = exception;
@@ -155,15 +154,14 @@ public class Controller {
     /*
      * Versions and sections
      */
-
     private void checkVersions() throws BadVersionException {
         NodeList nodes = document.getFirstChild().getChildNodes();
-        for (int i= 0; i < nodes.getLength(); i++) {
+        for (int i = 0; i < nodes.getLength(); i++) {
             if (nodes.item(i) instanceof Element && nodes.item(i).getNamespaceURI().equals(dinosyNS)) {
                 String componentVersion = nodes.item(i).getAttributes().getNamedItem("since").getNodeValue();
                 String needed = "1.1.1";
                 if (checkVersion(componentVersion, needed) < 0) {
-                    throw new  BadVersionException(needed, componentVersion, nodes.item(i).getNodeName());
+                    throw new BadVersionException(needed, componentVersion, nodes.item(i).getNodeName());
                 }
                 if (getRealNodeName(nodes.item(i)).equals("sources")) {
                     xmlSources = (Element) nodes.item(i);
@@ -194,7 +192,7 @@ public class Controller {
         String[] string2 = version2.split("\\.");
         int[] int1 = new int[3];
         int[] int2 = new int[3];
-        for (int i= 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             int1[i] = (int) Integer.valueOf(string1[i]);
             int2[i] = (int) Integer.valueOf(string2[i]);
             if (int1[i] != int2[i]) {
@@ -205,6 +203,7 @@ public class Controller {
     }
 
     public class BadVersionException extends Exception {
+
         public String needed;
         public String given;
         public String component;
@@ -225,9 +224,8 @@ public class Controller {
     /*
      * Parsing sections
      */
-
     private void parseSource() {
-        for (int i= 0; i < xmlSources.getChildNodes().getLength(); i++) {
+        for (int i = 0; i < xmlSources.getChildNodes().getLength(); i++) {
             Node item = xmlSources.getChildNodes().item(i);
             if (item instanceof Element && item.getNamespaceURI().equals(dinosyNS)) {
                 Source instance = Source.getInstance((Element) item);
@@ -241,7 +239,7 @@ public class Controller {
     }
 
     private void parseData() {
-        for (int i= 0; i < xmlData.getChildNodes().getLength(); i++) {
+        for (int i = 0; i < xmlData.getChildNodes().getLength(); i++) {
             Node item = xmlData.getChildNodes().item(i);
             if (item instanceof Element && item.getNamespaceURI().equals(dinosyNS)) {
                 Data instance = Data.getInstance((Element) item);
@@ -284,18 +282,15 @@ public class Controller {
     public Map<Integer, Source> getSources() {
         return sources;
     }
-    
+
     public boolean hasRelations() {
         return xmlRelations != null && xmlRelations.hasChildNodes();
     }
-    
+
 //##############################################################################
-    
-    
     /*
      * Saving
      */
-
     //TODO: save all, not just part, keeping all data and all sources
     public void save(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException {
         clear();
@@ -315,7 +310,6 @@ public class Controller {
     /*
      * Preparing data
      */
-
     private void leaveUniqueData() {
         Set<Data> dataSet = new HashSet<Data>(dataList.size());
         dataSet.addAll(dataList);
@@ -334,8 +328,8 @@ public class Controller {
         for (Data d : dataSet) {
             List<Relation> toDelete = new LinkedList<Relation>();
             for (Relation relation : d.getRelations()) {
-                if (relation.getFrom() == d && !dataSet.contains(relation.getTo()) ||
-                    relation.getTo() == d && !dataSet.contains(relation.getFrom())) {
+                if (relation.getFrom() == d && !dataSet.contains(relation.getTo())
+                        || relation.getTo() == d && !dataSet.contains(relation.getFrom())) {
                     toDelete.add(relation);
                 }
             }
@@ -366,7 +360,6 @@ public class Controller {
     /*
      * Converting to XML
      */
-
     private void createEmptyDocument() throws ParserConfigurationException {
         if (factory == null) {
             initDocumentBuilderFactory();
@@ -378,11 +371,11 @@ public class Controller {
         String schemaNS = "http://www.w3.org/2001/XMLSchema-instance";
         dinosy.setAttributeNS(schemaNS, "schemaLocation", dinosyNS + " file:/home/aurelijus/Documents/DiNoSy/DataLib/src/lt/dinosy/datalib/dinosy.xsd");
         document.appendChild(dinosy);
-        
+
 //        /* Stilesheet (XSL Transformation) */
 //        ProcessingInstruction pi = document.createProcessingInstruction("xml-stylesheet", "href=\"http://aurelijus.banelis.lt/dinosy/transf.xsl\" type=\"text/xsl\"");
 //        dinosy.getParentNode().insertBefore(pi, dinosy);
-        
+
         /* Sources */
         xmlSources = document.createElementNS(dinosyNS, "sources");
         xmlSources.setAttribute("since", "1.1.1");
@@ -429,7 +422,7 @@ public class Controller {
             xmlData.appendChild(element.toNode(document, dinosyNS));
         }
     }
-    
+
     private void prepareRelations() {
         Set<Relation> relations = new HashSet<Relation>();
         for (Data element : dataList) {
@@ -441,7 +434,7 @@ public class Controller {
             xmlRelations.appendChild(relation.toNode(document, dinosyNS));
         }
     }
-    
+
     private void prepareRepresentations(Collection<Representation> representations) {
         for (Representation representation : representations) {
             xmlRepresentations.appendChild(representation.toNode(document, dinosyNS));
@@ -461,7 +454,7 @@ public class Controller {
         StreamResult result = new StreamResult(new File(file));
         transformer.transform(new DOMSource(document), result);
     }
-    
+
     public static int getNewSourceId() {
         lastSourceId++;
         return lastSourceId;
@@ -476,7 +469,6 @@ public class Controller {
     /*
      * Appending data
      */
-
     public void append(List<Data> data, String file) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException, TransformerConfigurationException, TransformerException {
         if ((new File(file)).exists()) {
             openFile(file);
@@ -540,6 +532,7 @@ public class Controller {
             public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     private int i = 0;
+
                     public boolean hasNext() {
                         if (element == null || element.getChildNodes() == null) {
                             return false;
@@ -547,6 +540,7 @@ public class Controller {
                             return i <= lastI;
                         }
                     }
+
                     public Element next() {
                         Node node = element.getChildNodes().item(i++);
                         while (!(node instanceof Element)) {
@@ -554,7 +548,9 @@ public class Controller {
                         }
                         return (Element) node;
                     }
-                    public void remove() {}
+
+                    public void remove() {
+                    }
                 };
             }
         };
@@ -564,7 +560,6 @@ public class Controller {
     /*
      * Common section implementation
      */
-
     static boolean hasSuper(java.lang.Class<?> who, java.lang.Class<?> what) {
         java.lang.Class<?> parent = who.getSuperclass();
         while (parent != what && parent != Object.class) {

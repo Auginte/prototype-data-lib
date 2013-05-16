@@ -124,7 +124,11 @@ public abstract class Source implements Serializable, Cloneable {
         Source clone = (Source) super.clone();
         clone.id = Controller.getNewSourceId();
         clone.date = (Date) date.clone();
-        clone.parent = parent.clone();
+        if (parent != null) {
+            clone.parent = parent.clone();
+        } else {
+            clone.parent = null;
+        }
         clone.childs = new LinkedList<Source>(childs);
         return clone;
     }

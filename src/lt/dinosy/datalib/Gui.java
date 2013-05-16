@@ -5,8 +5,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,8 +19,9 @@ import org.xml.sax.SAXException;
  * @author Aurelijus Banelis
  */
 public class Gui {
-    public static Settings settings = new Settings();
-    
+
+    public static Settings settings = Settings.getInstance();
+
     public static void main(String[] args) {
         try {
             settings.load();
@@ -30,24 +29,24 @@ public class Gui {
             System.err.println("Can not read settings file");
             ex.printStackTrace(System.err);
         }
-        System.out.println(settings.currentPorject);
-        if (args.length >= 11 && args[0].equalsIgnoreCase("import")) {
-            parseFirefoxImport(args);
-        } else if (args.length >= 2 && args[0].equalsIgnoreCase("help")) {
-            if (args[1].equalsIgnoreCase("import")) {
-                System.out.println(helpImportFirefox());
-            } else {
-                System.out.println("Unknown command: " + args[1]);
-                System.out.println(helpGlobal());
-            }
-        } else if (args.length >= 1 && args[0].equalsIgnoreCase("okular")) {
-            Controller controller = null;
-            controller = open();
-    //        show(controller);
-            importOkularData();
-        } else {
-            System.out.println(helpGlobal());
-        }
+//        System.out.println(settings.currentProject);
+//        if (args.length >= 11 && args[0].equalsIgnoreCase("import")) {
+//            parseFirefoxImport(args);
+//        } else if (args.length >= 2 && args[0].equalsIgnoreCase("help")) {
+//            if (args[1].equalsIgnoreCase("import")) {
+//                System.out.println(helpImportFirefox());
+//            } else {
+//                System.out.println("Unknown command: " + args[1]);
+//                System.out.println(helpGlobal());
+//            }
+//        } else if (args.length >= 1 && args[0].equalsIgnoreCase("okular")) {
+//            Controller controller = null;
+//            controller = open();
+//            //        show(controller);
+//            importOkularData();
+//        } else {
+//            System.out.println(helpGlobal());
+//        }
     }
 
     private static void parseFirefoxImport(String[] args) {
@@ -58,9 +57,9 @@ public class Gui {
         String data = null;
         String saved = null;
         try {
-            for (int i = 1; i < args.length - 1; i+=2) {
+            for (int i = 1; i < args.length - 1; i += 2) {
                 if (args[i].equalsIgnoreCase("-type")) {
-                    type = Firefox.Type.valueOf(args[i+1]);
+                    type = Firefox.Type.valueOf(args[i + 1]);
                 } else if (args[i].equalsIgnoreCase("-url")) {
                     url = URLDecoder.decode(args[i + 1], "UTF-8");
                 } else if (args[i].equalsIgnoreCase("-title")) {
@@ -78,7 +77,7 @@ public class Gui {
         }
         System.out.println("saved = " + saved);
         if (type == null || url == null || title == null || xpath == null || data == null || saved == null) {
-            System.out.println(errorMessage(new String[] {"-type", "-url", "-title", "-xpath", "-data", "-saved"}, type, url, title, xpath, data, saved));
+            System.out.println(errorMessage(new String[]{"-type", "-url", "-title", "-xpath", "-data", "-saved"}, type, url, title, xpath, data, saved));
             System.out.println(helpImportFirefox());
         } else {
             Firefox firefox = new Firefox(type, url, title, xpath, data, saved);
@@ -86,9 +85,9 @@ public class Gui {
         }
     }
 
-    private static String errorMessage(String[] names, Object ... given) {
+    private static String errorMessage(String[] names, Object... given) {
         StringBuilder messages = new StringBuilder();
-        for (int i= 0; i < names.length; i++) {
+        for (int i = 0; i < names.length; i++) {
             if (given[i] == null) {
                 messages.append(names[i]).append(" not given or invalid.").append("\n");
             }
@@ -97,22 +96,22 @@ public class Gui {
     }
 
     private static String helpImportFirefox() {
-        return "Usage: import -type <type> -url <url> -title <title> -xpath <xpath> -data <data>\n" +
-               "\t<type>\timage or html\n" +
-               "\t<url>\tx-www-form-urlencoded url of the web page\n" +
-               "\t<title>\tx-www-form-urlencoded title of the web page\n" +
-               "\t<xpath>\tx-www-form-urlencoded xpath query starting from body to selected part in document\n" +
-               "\t<data>\tx-www-form-urlencoded data. If <type> image - url to image, if <type> html - selection html code\n" +
-               "\t<saved>\tx-www-form-urlencoded file path without extention. saved screenshots (.png) ir page source (.html)";
+        return "Usage: import -type <type> -url <url> -title <title> -xpath <xpath> -data <data>\n"
+                + "\t<type>\timage or html\n"
+                + "\t<url>\tx-www-form-urlencoded url of the web page\n"
+                + "\t<title>\tx-www-form-urlencoded title of the web page\n"
+                + "\t<xpath>\tx-www-form-urlencoded xpath query starting from body to selected part in document\n"
+                + "\t<data>\tx-www-form-urlencoded data. If <type> image - url to image, if <type> html - selection html code\n"
+                + "\t<saved>\tx-www-form-urlencoded file path without extention. saved screenshots (.png) ir page source (.html)";
     }
 
     private static String helpGlobal() {
-        return "Usage: <command> <-parameter_name parameter_value>\n" +
-               "\t<command>\n" +
-               "\t\timport - imports data about selection in web page\n" +
-               "\t\tokular - updates information about okular annotations\n" +
-               "\t\thelp <command> - show aditional information about command\n\n" +
-               "For more information go to http://aurelijus.banelis.lt/dinosy\n";
+        return "Usage: <command> <-parameter_name parameter_value>\n"
+                + "\t<command>\n"
+                + "\t\timport - imports data about selection in web page\n"
+                + "\t\tokular - updates information about okular annotations\n"
+                + "\t\thelp <command> - show aditional information about command\n\n"
+                + "For more information go to http://aurelijus.banelis.lt/dinosy\n";
     }
 
     private static void importOkularData() {
@@ -131,7 +130,7 @@ public class Gui {
     private static Controller open() {
         Controller controller = new Controller();
         try {
-            controller.openFile( "src/lt/dinosy/datalib/testdocument.xml");
+            controller.openFile("src/lt/dinosy/datalib/testdocument.xml");
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SAXException ex) {

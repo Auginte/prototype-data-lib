@@ -36,11 +36,12 @@ import static lt.dinosy.datalib.Source.parseDate;
  * @author Aurelijus Banelis
  */
 public class Okular {
+
     private static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
     private static XPathFactory xPathFactory = XPathFactory.newInstance();
     private File infoFile;
     private transient Document xmlDocument;
-    public static String imageCacheDirectory = System.getProperty("user.home") + "/.dinosy/cache";
+    public static String imageCacheDirectory = Settings.getInstance().getCacheDirecotry();
     private int innerId = 1;
     private String realDocument = null;
     private static final boolean printErrors = false;
@@ -95,11 +96,11 @@ public class Okular {
         }
         return result;
     }
-    
+
     private String getName() {
         return infoFile.getName().substring(0, infoFile.getName().length() - 4);
     }
-    
+
     private void extractImage(final String imagePath, final Source.Okular source) {
         final File imageFile = new File(imagePath);
         if (!imageFile.getParentFile().isDirectory()) {
@@ -111,42 +112,45 @@ public class Okular {
             @Override
             public void run() {
                 int page = source.getPage();
-//                String extractImage = "/usr/bin/pdftk \"" + source.getSource() + "\" cat " + page + " output \"" + imagePath + ".pdf\"";
                 String pdfFile = imagePath + ".pdf";
-                Okular.run(new String[] {"/usr/bin/pdftk", source.getSource(), "cat", String.valueOf(page), "output", pdfFile});
-                Dimension size = getPageDimention(pdfFile);
-                if (size != null) {
-                    float height = size.height * 800 / size.width;
-                    size.setSize(800, height);
-                    int l = (int) (size.width * source.getPosition().l);
-                    int t = (int) (size.height * source.getPosition().t);
-                    int w = (int) (size.width * (source.getPosition().r - source.getPosition().l));
-                    int h = (int) (size.height * (source.getPosition().b - source.getPosition().t));
-                    String cropString = w + "x" + h + "+" + l + "+" + t;
-                    Okular.run(new String[] {"/usr/bin/convert", "-density", "400", pdfFile, "-scale", "800x", "-crop", cropString, imagePath});
+                String executable = Settings.getInstance().getPdfExtractor();
+                if (executable != null) {
+                    Okular.run(new String[]{executable, source.getSource(), "cat", String.valueOf(page), "output", pdfFile});
+                    Dimension size = getPageDimention(pdfFile);
+                    if (size != null) {
+                        float height = size.height * 800 / size.width;
+                        size.setSize(800, height);
+                        int l = (int) (size.width * source.getPosition().l);
+                        int t = (int) (size.height * source.getPosition().t);
+                        int w = (int) (size.width * (source.getPosition().r - source.getPosition().l));
+                        int h = (int) (size.height * (source.getPosition().b - source.getPosition().t));
+                        String cropString = w + "x" + h + "+" + l + "+" + t;
+                        Okular.run(new String[]{"/usr/bin/convert", "-density", "400", pdfFile, "-scale", "800x", "-crop", cropString, imagePath});
+                    } else {
+                        Okular.run(new String[]{"/usr/bin/convert", "-density", "400", pdfFile, "-scale", "800x", imagePath});
+                    }
+                    (new File(pdfFile)).delete();
                 } else {
-                    Okular.run(new String[] {"/usr/bin/convert", "-density", "400", pdfFile, "-scale", "800x", imagePath});
+                    Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, "No PDF extractor specifed for file", source.getSource());
                 }
-                (new File(pdfFile)).delete();
             }
         };
         extraction.start();
     }
 
-    public static String run(String[] command)
-    {
+    public static String run(String[] command) {
         String lastLine = "";
         try {
             Process proc = Runtime.getRuntime().exec(command);
             String line = null;
             BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-            while ( (line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null) {
                 lastLine = line;
             }
             boolean errorWas = false;
             br = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             line = null;
-            while ( (line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null) {
                 if (printErrors) {
                     if (!errorWas) {
                         System.err.println("Executting: " + implode(command, " "));
@@ -156,15 +160,19 @@ public class Okular {
                 }
             }
             proc.waitFor();
-        } catch (Throwable t) {}
+        } catch (Throwable t) {
+        }
         return lastLine;
     }
 
     public static Dimension getPageDimention(String pdfFile) {
-        String lastLine = run(new String[] {"/usr/bin/identify", pdfFile});
-        Matcher matcher = Pattern.compile(".+ PDF (\\d+)x(\\d+) .+").matcher(lastLine);
-        if (matcher.find()) {
-            return new Dimension(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)));
+        String executable = Settings.getInstance().getPdfAnalyser();
+        if (executable != null) {
+            String lastLine = run(new String[]{executable, pdfFile});
+            Matcher matcher = Pattern.compile(".+ PDF (\\d+)x(\\d+) .+").matcher(lastLine);
+            if (matcher.find()) {
+                return new Dimension(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)));
+            }
         }
         return null;
     }
@@ -186,7 +194,7 @@ public class Okular {
     public String printAll() {
         try {
             return readFileAsString(infoFile);
-        } catch(IOException ex) {
+        } catch (IOException ex) {
             return "ERROR: " + ex;
         }
     }
@@ -199,13 +207,11 @@ public class Okular {
         return realDocument;
     }
 
-    
     /*
      * Static elements
      */
-
     private static String getDir() {
-        return "/home/aurelijus/.kde/share/apps/okular/";
+        return Settings.getInstance().getOkularSettingsDirectory();
     }
 
     private static String readFileAsString(File file) throws java.io.IOException {
@@ -215,10 +221,15 @@ public class Okular {
             f = new BufferedInputStream(new FileInputStream(file));
             f.read(buffer);
         } finally {
-            if (f != null) try { f.close(); } catch (IOException ignored) { }
+            if (f != null) {
+                try {
+                    f.close();
+                } catch (IOException ignored) {
+                }
+            }
         }
         return new String(buffer);
-}
+    }
 
     public static File[] getDocumentsData() {
         File settingsDirectory = new File(getDir() + "docdata");
@@ -243,7 +254,7 @@ public class Okular {
         try {
             Document xmlDocument = getDocument(getDir() + "bookmarks.xml");
             NodeList resultList = getNodes("//bookmark", xmlDocument);
-            for (int i= 0; i < resultList.getLength(); i++) {
+            for (int i = 0; i < resultList.getLength(); i++) {
                 Element element = (Element) resultList.item(i);
                 result.add(element.getAttribute("href"));
             }
@@ -259,11 +270,9 @@ public class Okular {
         return result;
     }
 
-    
     /*
      * XML utilities
      */
-    
     private static Document getDocument(String file) throws ParserConfigurationException, SAXException, IOException {
         documentBuilderFactory.setValidating(false);
         InputSource inputStream = new org.xml.sax.InputSource();
@@ -271,17 +280,17 @@ public class Okular {
         DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
         return builder.parse(inputStream);
     }
-    
+
     private static NodeList getNodes(String xpaht, Document document) throws XPathExpressionException {
         XPath xpath = xPathFactory.newXPath();
         XPathExpression expression = xpath.compile(xpaht);
         return (NodeList) expression.evaluate(document, XPathConstants.NODESET);
     }
-    
+
     private static Element getParent(Element child, String parentName) throws XPathExpressionException {
         return (Element) xPathFactory.newXPath().evaluate("ancestor::" + parentName, child, XPathConstants.NODE);
     }
-    
+
     private static Element getChild(Element parent, String childName) throws XPathExpressionException {
         return (Element) xPathFactory.newXPath().evaluate("descendant::" + childName, parent, XPathConstants.NODE);
     }
@@ -289,20 +298,19 @@ public class Okular {
     /*
      * Enumeration utilities
      */
-
     static enum AnnotationType {
-            AText(1),      ///< A textual annotation
-            ALine(2),      ///< A line annotation
-            AGeom(3),      ///< A geometrical annotation
-            AHighlight(4), ///< A highlight annotation
-            AStamp(5),     ///< A stamp annotation
-            AInk(6),       ///< An ink annotation
-            ACaret(8),     ///< A caret annotation
-            AFileAttachment(9), ///< A file attachment annotation
-            ASound(10),    ///< A sound annotation
-            AMovie(11),    ///< A movie annotation
-            A_BASE(0);      ///< The annotation base class
 
+        AText(1), ///< A textual annotation
+        ALine(2), ///< A line annotation
+        AGeom(3), ///< A geometrical annotation
+        AHighlight(4), ///< A highlight annotation
+        AStamp(5), ///< A stamp annotation
+        AInk(6), ///< An ink annotation
+        ACaret(8), ///< A caret annotation
+        AFileAttachment(9), ///< A file attachment annotation
+        ASound(10), ///< A sound annotation
+        AMovie(11), ///< A movie annotation
+        A_BASE(0);      ///< The annotation base class
         private int type;
 
         private AnnotationType(int type) {
@@ -323,7 +331,7 @@ public class Okular {
         }
     }
 
-    private static boolean in(AnnotationType type, AnnotationType ... searchIn) {
+    private static boolean in(AnnotationType type, AnnotationType... searchIn) {
         for (AnnotationType annotationType : searchIn) {
             if (type == annotationType) {
                 return true;

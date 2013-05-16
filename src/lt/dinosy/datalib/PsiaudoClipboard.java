@@ -3,10 +3,12 @@ package lt.dinosy.datalib;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,14 +23,11 @@ import java.util.logging.Logger;
  * @author Aurelijus Banelis
  */
 public class PsiaudoClipboard {
+
     private static String getFile() {
-        File directory = new File(System.getProperty("user.home") + "/.dinosy");
-        if (!directory.isDirectory()) {
-            directory.mkdirs();
-        }
-        return directory.getPath() + "/clipboard.ini";
+        return Settings.getInstance().getClipboardFile();
     }
-    
+
     public static void addToClipboard(Map<String, String> data, String comment) {
         try {
             BufferedWriter writter = new BufferedWriter(new FileWriter(getFile(), true));
@@ -79,7 +78,7 @@ public class PsiaudoClipboard {
         }
         return result;
     }
-    
+
     protected static String getTime() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
     }

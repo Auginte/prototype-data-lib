@@ -29,16 +29,15 @@ import net.sourceforge.iharder.Base64;
  * @author Aurelijus Banelis
  */
 public class Firefox {
+
     private Type type;
     private String url;
     private String title;
     private String xpath;
     private String data;
     private String saved;
-    
-    //FIXME: use over configurations
-    public static String webDataFile = System.getProperty("user.home") + "/.dinosy/webData.xml";
-    public static String webDataCache = System.getProperty("user.home") + "/.dinosy/internetCache";
+    public static String webDataFile = Settings.getInstance().getWebDataFile();
+    public static String webDataCache = Settings.getInstance().getInternetCache();
     private static final int READ_SIZE = 1024;
 
     public Firefox(Type type, String url, String title, String xpath, String data, String saved) {
@@ -52,14 +51,15 @@ public class Firefox {
 
     //TODO: overthink Serializable (not only for copy and paste)
     class SpecificSelection implements Transferable, Serializable {
+
         private String mime;
         private String data;
         private DataFlavor[] flavors;
-        
+
         public SpecificSelection(String mime, String data) {
             this.mime = mime;
             this.data = data;
-            flavors = new DataFlavor[] { new DataFlavor(String.class, mime) };
+            flavors = new DataFlavor[]{new DataFlavor(String.class, mime)};
         }
 
         public DataFlavor[] getTransferDataFlavors() {
@@ -82,9 +82,8 @@ public class Firefox {
                 throw new UnsupportedFlavorException(arg0);
             }
         }
-        
     }
-    
+
     public void toClipboard() {
         Map<String, String> map = new HashMap<String, String>();
         map.put("url", url);
@@ -96,7 +95,7 @@ public class Firefox {
         map.put("date", Source.parseDate(new Date()));
         PsiaudoClipboard.addToClipboard(map, "DiNoSy Firefox");
     }
-    
+
     public void appendData() {
         Controller controller = new Controller();
         List<Data> dataList = new ArrayList<Data>(1);
@@ -124,7 +123,7 @@ public class Firefox {
                     String destination = webDataCache + "/" + generateURL(data);
                     download(data, destination);
                 } catch (Exception ex) {
-                    Logger.getLogger(Firefox.class.getName()).log(Level.SEVERE, "Error caching image: " + data,  ex);
+                    Logger.getLogger(Firefox.class.getName()).log(Level.SEVERE, "Error caching image: " + data, ex);
                 }
             }
         };
@@ -139,7 +138,7 @@ public class Firefox {
                     String destination = webDataCache + "/" + generateURL(url) + "-" + System.currentTimeMillis() + ".html";
                     download(url, destination);
                 } catch (Exception ex) {
-                    Logger.getLogger(Firefox.class.getName()).log(Level.SEVERE, "Error caching web page: " + url,  ex);
+                    Logger.getLogger(Firefox.class.getName()).log(Level.SEVERE, "Error caching web page: " + url, ex);
                 }
             }
         };
@@ -169,6 +168,7 @@ public class Firefox {
     }
 
     public static enum Type {
+
         image,
         html
     }
