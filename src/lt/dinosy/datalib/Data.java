@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.io.File;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.LinkedList;
@@ -15,8 +16,10 @@ import static lt.dinosy.datalib.Controller.getRealNodeName;
  *
  * @author Aurelijus Banelis
  * @todo Serialize all
+ * @todo cloning for images
  */
-public abstract class Data implements Serializable {
+public abstract class Data implements Serializable, Cloneable {
+
     private int id;
     private int parentId;
     private Data parent;
@@ -29,7 +32,6 @@ public abstract class Data implements Serializable {
     /*
      * Generic data element
      */
-
     private Data(Element element) {
         id = Integer.valueOf(element.getAttribute("id"));
         parentId = Controller.defaultParentId;
@@ -79,7 +81,6 @@ public abstract class Data implements Serializable {
         source = map.get(sourceId);
     }
 
-
     public List<Data> getChilds() {
         return childs;
     }
@@ -115,7 +116,7 @@ public abstract class Data implements Serializable {
     public List<Relation> getRelations() {
         return relations;
     }
-    
+
     public void addRepresentation(Representation representation) {
         representations.add(representation);
     }
@@ -123,7 +124,7 @@ public abstract class Data implements Serializable {
     public List<Representation> getRepresentations() {
         return representations;
     }
-    
+
     public boolean removeRepresentation(Representation representation) {
         return representations.remove(representation);
     }
@@ -146,20 +147,40 @@ public abstract class Data implements Serializable {
         return classObject.getSimpleName().toLowerCase();
     }
 
+    public String getDataFile() {
+        if (new File(getData()).exists() || getData().startsWith("zip://")) {
+            System.out.println("<--" + getData() + " | " + this);
+            return getData();
+        } else {
+            System.out.println("<--" + null + " | " + this);
+            return null;
+        }
+    }
+
     public abstract String getData();
+
+    public abstract void setDataFile(String file);
+
     protected abstract void toNode(Element element, Document document, String nameSpace);
 
-    
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + ": " + getData();
     }
-    
+
+    @Override
+    /**
+     * Shallow clone!
+     */
+    protected Data clone() throws CloneNotSupportedException {
+        return (Data) super.clone();
+    }
+
     /*
      * Types of data
      */
-    
     public static class Plain extends Data {
+
         private String data;
 
         public Plain(Element element) {
@@ -185,9 +206,16 @@ public abstract class Data implements Serializable {
         protected void toNode(Element element, Document document, String nameSpace) {
             element.appendChild(document.createTextNode(getData()));
         }
+
+        @Override
+        public void setDataFile(String file) {
+            data = file;
+            System.out.println("-2>" + file);
+        }
     };
 
     public static class Class extends Data {
+
         private String name;
         private List<String> extending;
         private List<String> implementing;
@@ -246,6 +274,10 @@ public abstract class Data implements Serializable {
         }
 
         @Override
+        public void setDataFile(String file) {
+        }
+
+        @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             Element nameNode = document.createElementNS(nameSpace, "name");
             nameNode.setTextContent(name);
@@ -274,6 +306,7 @@ public abstract class Data implements Serializable {
     };
 
     public static class Image extends Plain {
+
         private String cached;
 
         public Image(Element element) {
@@ -298,6 +331,13 @@ public abstract class Data implements Serializable {
         }
 
         @Override
+        public void setDataFile(String file) {
+            super.setDataFile(file);
+            cached = file;
+            System.out.println("-->" + file);
+        }
+
+        @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             super.toNode(element, document, nameSpace);
             if (cached != null) {
@@ -307,6 +347,7 @@ public abstract class Data implements Serializable {
     };
 
     public static class Link extends Plain {
+
         private String url;
 
         public Link(Element element) {
@@ -327,7 +368,6 @@ public abstract class Data implements Serializable {
     /*
      * Static elemetns
      */
-
     private static final Map<String, Constructor<?>> types = Controller.getClassMap(Data.class);
 
     public static Data getInstance(Element element) {

@@ -1,13 +1,19 @@
 package lt.dinosy.datalib;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,6 +23,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -50,7 +59,7 @@ public class Controller {
     private Element xmlData;
     private Element xmlRepresentations;
     private Element xmlRelations;
-    private static final String dinosyNS = "http://aurelijus.banelis.lt/dinosy";
+    private static final String dinosyNS = Settings.getInstance().getNameSpace();
     private Map<Integer, Data> data;
     private Map<Integer, Source> sources;
     private static int lastSourceId = 0;
@@ -64,9 +73,68 @@ public class Controller {
     public final static int defaultParentId = -1;
 
     public boolean openFile(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
-        File file = new File(fileAddress);
+        if (fileAddress.toLowerCase().endsWith("zip")) {
+            return openZip(fileAddress);
+        } else {
+            return openXml(fileAddress);
+        }
+    }
 
-        document = validate(file, Controller.class.getResourceAsStream("dinosy.xsd"));
+    public boolean openXml(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
+        document = validate(new File(fileAddress), Settings.getInstance().getXsd());
+        return loadXml();
+    }
+
+    public boolean openZip(String fileAddress) throws URISyntaxException, ParserConfigurationException, SAXException, IOException, BadVersionException {
+        ZipFile zf = new ZipFile(fileAddress);
+        ZipEntry dataName = Settings.getInstance().getZipDataName();
+        document = validate(zf.getInputStream(dataName), Settings.getInstance().getXsd());
+        boolean success = loadXml();
+        if (success) {
+            extractImages(zf);
+        }
+        zf.close();;
+        return success;
+    }
+
+    private void extractImages(ZipFile zf) throws FileNotFoundException, IOException {
+        String zipDirectory = Settings.getInstance().getZipDataDirectory().getName();
+        String cacheDirectory = Settings.getInstance().getDateCacheDirecotry().getPath() + "/";
+        Map<String, Data> map = getSourceFileMap();
+        Enumeration<? extends ZipEntry> entries = zf.entries();
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            if (!entry.isDirectory() && entry.getName().startsWith(zipDirectory)) {
+                String name = entry.getName().substring(zipDirectory.length());
+                String outputFile = cacheDirectory + name;
+                String zipName = "zip://" + entry.getName();
+                FileOutputStream fout = new FileOutputStream(outputFile);
+                InputStream zin = zf.getInputStream(entry);
+                transfer(zin, fout);
+                zin.close();
+                fout.close();
+                if (map.containsKey(zipName)) {
+                    map.get(zipName).setDataFile(outputFile);
+                }
+            }
+        }
+    }
+
+    private Map<String, Data> getSourceFileMap() {
+        if (data == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Data> map = new HashMap<String, Data>(data.size() / 2);
+        for (Data element : data.values()) {
+            String file = element.getDataFile();
+            if (file != null && file.toLowerCase().startsWith("zip://")) {
+                map.put(file, element);
+            }
+        }
+        return map;
+    }
+
+    private boolean loadXml() throws BadVersionException, SAXException {
         if (valid) {
             clear();
             checkVersions();
@@ -108,6 +176,14 @@ public class Controller {
      * Format
      */
     private Document validate(File dataFile, InputStream stream) throws ParserConfigurationException, SAXException, IOException {
+        return getValidator(stream).parse(dataFile);
+    }
+
+    private Document validate(InputStream dataStream, InputStream stream) throws ParserConfigurationException, SAXException, IOException {
+        return getValidator(stream).parse(dataStream);
+    }
+
+    private DocumentBuilder getValidator(InputStream stream) throws ParserConfigurationException, SAXException, IOException {
         /* Validator */
         if (factory == null) {
             initDocumentBuilderFactory();
@@ -140,7 +216,7 @@ public class Controller {
                 lastException = exception;
             }
         });
-        return builder.parse(dataFile);
+        return builder;
     }
 
     private void initDocumentBuilderFactory() {
@@ -159,8 +235,8 @@ public class Controller {
         for (int i = 0; i < nodes.getLength(); i++) {
             if (nodes.item(i) instanceof Element && nodes.item(i).getNamespaceURI().equals(dinosyNS)) {
                 String componentVersion = nodes.item(i).getAttributes().getNamedItem("since").getNodeValue();
-                String needed = "1.1.1";
-                if (checkVersion(componentVersion, needed) < 0) {
+                String needed = Settings.getInstance().getSupportedVersion();
+                if (checkVersion(componentVersion, needed) > 0) {
                     throw new BadVersionException(needed, componentVersion, nodes.item(i).getNodeName());
                 }
                 if (getRealNodeName(nodes.item(i)).equals("sources")) {
@@ -288,11 +364,82 @@ public class Controller {
     }
 
 //##############################################################################
+    public void save(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException, IOException {
+        if (file.toLowerCase().endsWith(".zip")) {
+            saveToZip(data, representations, file);
+        } else {
+            saveToXml(data, representations, file);
+        }
+    }
+
     /*
      * Saving
      */
+    public void saveToZip(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException, IOException {
+        FileOutputStream fout = new FileOutputStream(file);
+        ZipOutputStream zout = new ZipOutputStream(fout);
+        zout.putNextEntry(Settings.getInstance().getZipDataDirectory());
+        data = makeSourcesRelative(data, zout);
+        zout.closeEntry();
+        save(data, representations);
+        zout.putNextEntry(Settings.getInstance().getZipDataName());
+        StreamResult result = new StreamResult(zout);
+        transformer.transform(new DOMSource(document), result);
+        zout.closeEntry();
+        zout.close();
+    }
+
+    private Collection<Data> makeSourcesRelative(Collection<Data> data, ZipOutputStream zout) throws FileNotFoundException, IOException {
+        ArrayList<Data> newData = new ArrayList<Data>(data.size());
+        try {
+            for (Data element : data) {
+                newData.add(element.clone());
+            }
+        } catch (CloneNotSupportedException ex) {
+            Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, "makeSourcesRelative clonning", ex);
+        }
+
+        String directory = Settings.getInstance().getZipDataDirectory().getName();
+        for (Data element : newData) {
+            String fileAddress = element.getDataFile();
+            File file;
+            if (fileAddress != null) {
+//            if (fileAddress != null && (file = new File(fileAddress)).exists()) {
+                if ((file = new File(fileAddress)).exists()) {
+                    FileInputStream fin = new FileInputStream(file);
+                    zout.putNextEntry(new ZipEntry(directory + file.getName()));
+                    transfer(fin, zout);
+                    zout.closeEntry();
+                    fin.close();
+                    element.setDataFile("zip://" + directory + file.getName());
+                } else {
+                    System.err.println("fileAddress = " + fileAddress);
+                }
+            }
+        }
+        return newData;
+    }
+
+    private void transfer(InputStream input, OutputStream output) throws IOException {
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = input.read(buffer)) > 0) {
+            output.write(buffer, 0, len);
+        }
+    }
+
+    private void saveToXml(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException {
+        save(data, representations);
+        saveXmlToFile(file);
+    }
+
+    private void saveXmlToFile(String file) throws TransformerException {
+        StreamResult result = new StreamResult(new File(file));
+        transformer.transform(new DOMSource(document), result);
+    }
+
     //TODO: save all, not just part, keeping all data and all sources
-    public void save(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException {
+    private void save(Collection<Data> data, Collection<Representation> representations) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException {
         clear();
         this.dataList = data;
         this.representations = representations;
@@ -303,9 +450,8 @@ public class Controller {
         prepareData();
         prepareRelations();
         prepareRepresentations(representations);
-        transformToXML(file);
+        transformToXML();
     }
-
 
     /*
      * Preparing data
@@ -371,6 +517,7 @@ public class Controller {
         String schemaNS = "http://www.w3.org/2001/XMLSchema-instance";
         dinosy.setAttributeNS(schemaNS, "schemaLocation", dinosyNS + " file:/home/aurelijus/Documents/DiNoSy/DataLib/src/lt/dinosy/datalib/dinosy.xsd");
         document.appendChild(dinosy);
+        String supportedVersion = Settings.getInstance().getSupportedVersion();
 
 //        /* Stilesheet (XSL Transformation) */
 //        ProcessingInstruction pi = document.createProcessingInstruction("xml-stylesheet", "href=\"http://aurelijus.banelis.lt/dinosy/transf.xsl\" type=\"text/xsl\"");
@@ -378,19 +525,19 @@ public class Controller {
 
         /* Sources */
         xmlSources = document.createElementNS(dinosyNS, "sources");
-        xmlSources.setAttribute("since", "1.1.1");
+        xmlSources.setAttribute("since", supportedVersion);
 
         /* Data */
         xmlData = document.createElementNS(dinosyNS, "data");
-        xmlData.setAttribute("since", "1.1.1");
+        xmlData.setAttribute("since", supportedVersion);
 
         /* Relations */
         xmlRelations = document.createElementNS(dinosyNS, "relations");
-        xmlRelations.setAttribute("since", "1.1.1");
+        xmlRelations.setAttribute("since", supportedVersion);
 
         /* Representations */
         xmlRepresentations = document.createElementNS(dinosyNS, "representations");
-        xmlRepresentations.setAttribute("since", "1.1.1");
+        xmlRepresentations.setAttribute("since", supportedVersion);
     }
 
     private void prepareSources(boolean extractFromDataList) {
@@ -441,7 +588,7 @@ public class Controller {
         }
     }
 
-    private void transformToXML(String file) throws TransformerConfigurationException, TransformerException {
+    private void transformToXML() throws TransformerConfigurationException {
         document.getDocumentElement().appendChild(xmlSources);
         document.getDocumentElement().appendChild(xmlData);
         document.getDocumentElement().appendChild(xmlRelations);
@@ -451,8 +598,6 @@ public class Controller {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         }
-        StreamResult result = new StreamResult(new File(file));
-        transformer.transform(new DOMSource(document), result);
     }
 
     public static int getNewSourceId() {
@@ -481,7 +626,8 @@ public class Controller {
         prepareSources(false);
         prepareData();
         prepareRepresentations(createPlaceHolders());
-        transformToXML(file);
+        transformToXML();
+        saveXmlToFile(file);
     }
 
     private void translateIds() {

@@ -5,12 +5,14 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
 
 /**
  * Class for storing global settings
@@ -242,5 +244,25 @@ public class Settings {
             }
         }
         return settingsInstance;
+    }
+
+    public String getNameSpace() {
+        return "http://aurelijus.banelis.lt/dinosy";
+    }
+
+    public InputStream getXsd() {
+        return getClass().getResourceAsStream("dinosy.xsd");
+    }
+
+    public ZipEntry getZipDataName() {
+        return new ZipEntry("dinosy.xml");
+    }
+
+    public ZipEntry getZipDataDirectory() {
+        return new ZipEntry("data/");
+    }
+
+    public String getSupportedVersion() {
+        return "1.1.2";
     }
 }
