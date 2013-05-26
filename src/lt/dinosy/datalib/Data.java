@@ -26,6 +26,7 @@ public abstract class Data implements Serializable, Cloneable {
     private List<Data> childs = new LinkedList<Data>();
     private List<Relation> relations = new LinkedList<Relation>();
     private List<Representation> representations = new LinkedList<Representation>();
+    private String originalDataFile = null;
     private int sourceId;
     private Source source;
 
@@ -149,10 +150,8 @@ public abstract class Data implements Serializable, Cloneable {
 
     public String getDataFile() {
         if (new File(getData()).exists() || getData().startsWith("zip://")) {
-            System.out.println("<--" + getData() + " | " + this);
             return getData();
         } else {
-            System.out.println("<--" + null + " | " + this);
             return null;
         }
     }
@@ -161,6 +160,8 @@ public abstract class Data implements Serializable, Cloneable {
 
     public abstract void setDataFile(String file);
 
+    public abstract void restoreDataFile();
+
     protected abstract void toNode(Element element, Document document, String nameSpace);
 
     @Override
@@ -168,11 +169,10 @@ public abstract class Data implements Serializable, Cloneable {
         return this.getClass().getSimpleName() + ": " + getData();
     }
 
-    @Override
     /**
      * Shallow clone!
      */
-    protected Data clone() throws CloneNotSupportedException {
+    protected Data shallowClone() throws CloneNotSupportedException {
         return (Data) super.clone();
     }
 
@@ -182,6 +182,7 @@ public abstract class Data implements Serializable, Cloneable {
     public static class Plain extends Data {
 
         private String data;
+        private String oldDataFile;
 
         public Plain(Element element) {
             super(element);
@@ -209,8 +210,13 @@ public abstract class Data implements Serializable, Cloneable {
 
         @Override
         public void setDataFile(String file) {
+            oldDataFile = data;
             data = file;
-            System.out.println("-2>" + file);
+        }
+
+        @Override
+        public void restoreDataFile() {
+            data = oldDataFile;
         }
     };
 
@@ -278,6 +284,10 @@ public abstract class Data implements Serializable, Cloneable {
         }
 
         @Override
+        public void restoreDataFile() {
+        }
+
+        @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             Element nameNode = document.createElementNS(nameSpace, "name");
             nameNode.setTextContent(name);
@@ -308,6 +318,7 @@ public abstract class Data implements Serializable, Cloneable {
     public static class Image extends Plain {
 
         private String cached;
+        private String originalCached;
 
         public Image(Element element) {
             super(element);
@@ -333,8 +344,14 @@ public abstract class Data implements Serializable, Cloneable {
         @Override
         public void setDataFile(String file) {
             super.setDataFile(file);
+            originalCached = cached;
             cached = file;
-            System.out.println("-->" + file);
+        }
+
+        @Override
+        public void restoreDataFile() {
+            super.restoreDataFile();
+            cached = originalCached;
         }
 
         @Override

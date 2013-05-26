@@ -92,6 +92,7 @@ public class Controller {
         boolean success = loadXml();
         if (success) {
             extractImages(zf);
+            extractSources(zf);
         }
         zf.close();;
         return success;
@@ -100,7 +101,7 @@ public class Controller {
     private void extractImages(ZipFile zf) throws FileNotFoundException, IOException {
         String zipDirectory = Settings.getInstance().getZipDataDirectory().getName();
         String cacheDirectory = Settings.getInstance().getDateCacheDirecotry().getPath() + "/";
-        Map<String, Data> map = getSourceFileMap();
+        Map<String, Data> map = getDataFileMap();
         Enumeration<? extends ZipEntry> entries = zf.entries();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
@@ -120,13 +121,47 @@ public class Controller {
         }
     }
 
-    private Map<String, Data> getSourceFileMap() {
+    private void extractSources(ZipFile zf) throws FileNotFoundException, IOException {
+        String zipDirectory = Settings.getInstance().getZipSourceDirectory().getName();
+        String cacheDirectory = Settings.getInstance().getDateCacheDirecotry().getPath() + "/";
+        Enumeration<? extends ZipEntry> entries = zf.entries();
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            if (!entry.isDirectory() && entry.getName().startsWith(zipDirectory)) {
+                String name = entry.getName().substring(zipDirectory.length());
+                String outputFile = cacheDirectory + name;
+                String zipName = "zip://" + entry.getName();
+                FileOutputStream fout = new FileOutputStream(outputFile);
+                InputStream zin = zf.getInputStream(entry);
+                transfer(zin, fout);
+                zin.close();
+                fout.close();
+                replaceSourceFiles(sources.values(), zipName, null);
+            }
+        }
+    }
+
+    private Map<String, Data> getDataFileMap() {
         if (data == null) {
             return Collections.emptyMap();
         }
         Map<String, Data> map = new HashMap<String, Data>(data.size() / 2);
         for (Data element : data.values()) {
             String file = element.getDataFile();
+            if (file != null && file.toLowerCase().startsWith("zip://")) {
+                map.put(file, element);
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Source> getSourceFileMap() {
+        if (sources == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Source> map = new HashMap<String, Source>(sources.size() / 5);
+        for (Source element : sources.values()) {
+            String file = element.getSourceFile();
             if (file != null && file.toLowerCase().startsWith("zip://")) {
                 map.put(file, element);
             }
@@ -378,46 +413,84 @@ public class Controller {
     public void saveToZip(Collection<Data> data, Collection<Representation> representations, String file) throws NotUniqueIdsException, ParserConfigurationException, TransformerConfigurationException, TransformerException, IOException {
         FileOutputStream fout = new FileOutputStream(file);
         ZipOutputStream zout = new ZipOutputStream(fout);
-        zout.putNextEntry(Settings.getInstance().getZipDataDirectory());
-        data = makeSourcesRelative(data, zout);
-        zout.closeEntry();
+        data = makeDataRelative(data, zout);
+        makeSourceRelative(data, zout);
         save(data, representations);
         zout.putNextEntry(Settings.getInstance().getZipDataName());
         StreamResult result = new StreamResult(zout);
         transformer.transform(new DOMSource(document), result);
         zout.closeEntry();
         zout.close();
+        makeDataAbsolute(data);
     }
 
-    private Collection<Data> makeSourcesRelative(Collection<Data> data, ZipOutputStream zout) throws FileNotFoundException, IOException {
-        ArrayList<Data> newData = new ArrayList<Data>(data.size());
-        try {
-            for (Data element : data) {
-                newData.add(element.clone());
+    private Set<String> getUniqueSourcesFiles(Set<Source> uniqueSources) {
+        Set<String> newSources = new HashSet<String>();
+        for (Source source : uniqueSources) {
+            if (source.getSourceFile() != null) {
+                newSources.add(source.getSourceFile());
             }
-        } catch (CloneNotSupportedException ex) {
-            Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, "makeSourcesRelative clonning", ex);
         }
+        return newSources;
+    }
 
+    private Collection<Data> makeDataRelative(Collection<Data> data, ZipOutputStream zout) throws FileNotFoundException, IOException {
+        zout.putNextEntry(Settings.getInstance().getZipDataDirectory());
         String directory = Settings.getInstance().getZipDataDirectory().getName();
-        for (Data element : newData) {
+        Set<String> saved = new HashSet<String>();
+        for (Data element : data) {
             String fileAddress = element.getDataFile();
             File file;
-            if (fileAddress != null) {
-//            if (fileAddress != null && (file = new File(fileAddress)).exists()) {
-                if ((file = new File(fileAddress)).exists()) {
-                    FileInputStream fin = new FileInputStream(file);
-                    zout.putNextEntry(new ZipEntry(directory + file.getName()));
-                    transfer(fin, zout);
-                    zout.closeEntry();
-                    fin.close();
-                    element.setDataFile("zip://" + directory + file.getName());
+            if (fileAddress != null && (file = new File(fileAddress)).exists() && !saved.contains(directory + file.getName())) {
+                FileInputStream fin = new FileInputStream(file);
+                zout.putNextEntry(new ZipEntry(directory + file.getName()));
+                transfer(fin, zout);
+                zout.closeEntry();
+                fin.close();
+                element.setDataFile("zip://" + directory + file.getName());
+                saved.add(directory + file.getName());
+            }
+        }
+        zout.closeEntry();
+        return data;
+    }
+
+    private void makeDataAbsolute(Collection<Data> data) {
+        for (Data element : data) {
+            if (element.getData().startsWith("zip://")) {
+                element.restoreDataFile();
+            }
+        }
+    }
+
+    private void makeSourceRelative(Collection<Data> data, ZipOutputStream zout) throws FileNotFoundException, IOException {
+        Set<Source> uniqueSources = getUniqueSources(data);
+        Set<String> filesAddresses = getUniqueSourcesFiles(uniqueSources);
+        String directory = Settings.getInstance().getZipSourceDirectory().getName();
+        for (String fileAddress : filesAddresses) {
+            File file;
+            if (fileAddress != null && (file = new File(fileAddress)).exists()) {
+                FileInputStream fin = new FileInputStream(file);
+                zout.putNextEntry(new ZipEntry(directory + file.getName()));
+                transfer(fin, zout);
+                zout.closeEntry();
+                fin.close();
+                replaceSourceFiles(uniqueSources, fileAddress, "zip://" + directory + file.getName());
+            }
+        }
+        zout.closeEntry();
+    }
+
+    private void replaceSourceFiles(Collection<Source> sources, String from, String to) {
+        for (Source source : sources) {
+            if (source.getSourceFile() != null && source.getSourceFile().equals(from)) {
+                if (to != null) {
+                    source.setSourceFile(to);
                 } else {
-                    System.err.println("fileAddress = " + fileAddress);
+                    source.setSourceFile(source.getSource());
                 }
             }
         }
-        return newData;
     }
 
     private void transfer(InputStream input, OutputStream output) throws IOException {
@@ -542,15 +615,7 @@ public class Controller {
 
     private void prepareSources(boolean extractFromDataList) {
         if (extractFromDataList) {
-            sourcesSet = new HashSet<Source>();
-            for (Data element : dataList) {
-                if (element.getSource() != null) {
-                    sourcesSet.add(element.getSource());
-                    if (element.getSource().getParent() != null) {
-                        sourcesSet.add(element.getSource().getParent());
-                    }
-                }
-            }
+            sourcesSet = getUniqueSources(dataList);
         }
         for (Source source : sourcesSet) {
             if (source instanceof Source.Project) {
@@ -562,6 +627,19 @@ public class Controller {
                 xmlSources.appendChild(source.toNode(document, dinosyNS));
             }
         }
+    }
+
+    private Set<Source> getUniqueSources(Collection<Data> data) {
+        Set<Source> newSources = new HashSet<Source>();
+        for (Data element : data) {
+            if (element.getSource() != null) {
+                newSources.add(element.getSource());
+                if (element.getSource().getParent() != null) {
+                    newSources.add(element.getSource().getParent());
+                }
+            }
+        }
+        return newSources;
     }
 
     private void prepareData() {

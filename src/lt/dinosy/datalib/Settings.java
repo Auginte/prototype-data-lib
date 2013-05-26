@@ -262,7 +262,11 @@ public class Settings {
         return new ZipEntry("data/");
     }
 
+    public ZipEntry getZipSourceDirectory() {
+        return new ZipEntry("source/");
+    }
+
     public String getSupportedVersion() {
-        return "1.1.2";
+        return "1.1.3";
     }
 }

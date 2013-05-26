@@ -1,5 +1,6 @@
 package lt.dinosy.datalib;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.SimpleTimeZone;
 import java.util.Calendar;
@@ -23,6 +24,7 @@ import org.w3c.dom.Element;
  * @todo Serialize all
  */
 public abstract class Source implements Serializable, Cloneable {
+
     private int id;
     private Date date;
     private int parentId = Controller.defaultParentId;
@@ -30,7 +32,7 @@ public abstract class Source implements Serializable, Cloneable {
     private List<Source> childs = new LinkedList<Source>();
 
     /**
-     * @throws  NullPointerException when date is null
+     * @throws NullPointerException when date is null
      */
     private Source(Date date, Source parent) {
         this.parent = parent;
@@ -56,7 +58,7 @@ public abstract class Source implements Serializable, Cloneable {
     public Date getDate() {
         return date;
     }
-    
+
     public String getDateSting() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -112,11 +114,27 @@ public abstract class Source implements Serializable, Cloneable {
     }
 
     public abstract String getSource();
+
     protected abstract void toNode(Element element, Document document, String nameSpace);
+
+    public String getSourceFile() {
+        if (new File(getSource()).exists() || getSource().startsWith("zip://")) {
+            return getSource();
+        } else {
+            return null;
+        }
+    }
+
+    public void setSourceFile(String file) {
+    }
 
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + ": " + getSource();
+    }
+
+    public Source shallowClone() throws CloneNotSupportedException {
+        return (Source) super.clone();
     }
 
     @Override
@@ -133,12 +151,11 @@ public abstract class Source implements Serializable, Cloneable {
         return clone;
     }
 
-    
     /*
      * Types of data
      */
-
     public static class Event extends Source {
+
         private String place;
         private String name;
 
@@ -192,6 +209,7 @@ public abstract class Source implements Serializable, Cloneable {
     };
 
     public static class Project extends Source {
+
         private String name;
         private String address;
         private String owner;
@@ -240,6 +258,7 @@ public abstract class Source implements Serializable, Cloneable {
     };
 
     public static class Model extends Source {
+
         private Language language;
         private String file;
 
@@ -271,17 +290,20 @@ public abstract class Source implements Serializable, Cloneable {
         }
 
         public enum Language {
+
             php("php"),
             java("java"),
             cpp("c++");
-
             private String value;
+
             private Language(String value) {
                 this.value = value;
             }
+
             public String getValue() {
                 return value;
             }
+
             public Language getName(String value) {
                 for (Language language : this.values()) {
                     if (language.getValue().equals(value)) {
@@ -294,9 +316,11 @@ public abstract class Source implements Serializable, Cloneable {
     };
 
     public static class Book extends Source {
+
         private String name;
         private int page;
         private String isbn = null;
+        private String cachedFile = null;
 
         public Book(Date date, String name, int page, String isbn, Source source) {
             super(date, source);
@@ -315,6 +339,10 @@ public abstract class Source implements Serializable, Cloneable {
             super(element);
             page = Integer.valueOf(element.getAttribute("page"));
             isbn = element.getAttribute("isbn");
+            cachedFile = element.getAttribute("cachedFile");
+            if (cachedFile == null && new File(name).exists()) {
+                cachedFile = name;
+            }
             name = element.getTextContent();
         }
 
@@ -331,15 +359,27 @@ public abstract class Source implements Serializable, Cloneable {
             return page;
         }
 
+        public String getCachedFile() {
+            return cachedFile;
+        }
+
+        @Override
+        public void setSourceFile(String file) {
+            cachedFile = file;
+        }
+
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             element.setAttribute("page", String.valueOf(page));
             if (isbn != null && isbn.length() > 0) {
                 element.setAttribute("isbn", isbn);
             }
+            if (cachedFile != null) {
+                element.setAttribute("cachedFile", cachedFile);
+            }
             element.appendChild(document.createTextNode(name));
         }
-        
+
         @Override
         public String toString() {
             if (getSource().endsWith(".pdf")) {
@@ -356,9 +396,10 @@ public abstract class Source implements Serializable, Cloneable {
     }
 
     public static class Okular extends Book {
+
         private Boundary boundary;
         private String cachedImage;
-        
+
         public Okular(Date date, String file, int page, Boundary boundary, String isbn, String cachedImage, Source source) {
             super(date, file, page, isbn, source);
             this.boundary = boundary;
@@ -366,7 +407,7 @@ public abstract class Source implements Serializable, Cloneable {
         }
 
         public Okular(Date date, String file, int page, Boundary boundary, String cachedImage) {
-            super(date, file, page, null, null);            
+            super(date, file, page, null, null);
             this.boundary = boundary;
             this.cachedImage = cachedImage;
         }
@@ -391,7 +432,7 @@ public abstract class Source implements Serializable, Cloneable {
                 return cachedImage;
             }
         }
-        
+
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             super.toNode(element, document, nameSpace);
@@ -419,9 +460,9 @@ public abstract class Source implements Serializable, Cloneable {
             clone.boundary = boundary.clone();
             return clone;
         }
-        
-        
+
         public static class Boundary implements Serializable, Cloneable {
+
             public float l, r, t, b;
 
             public Boundary(String list) {
@@ -446,13 +487,25 @@ public abstract class Source implements Serializable, Cloneable {
 
             @Override
             public boolean equals(Object obj) {
-                if (obj == null) {  return false; }
-                if (getClass() != obj.getClass()) { return false; }
+                if (obj == null) {
+                    return false;
+                }
+                if (getClass() != obj.getClass()) {
+                    return false;
+                }
                 final Boundary other = (Boundary) obj;
-                if (Float.floatToIntBits(this.l) != Float.floatToIntBits(other.l)) { return false; }
-                if (Float.floatToIntBits(this.r) != Float.floatToIntBits(other.r)) { return false; }
-                if (Float.floatToIntBits(this.t) != Float.floatToIntBits(other.t)) { return false; }
-                if (Float.floatToIntBits(this.b) != Float.floatToIntBits(other.b)) { return false; }
+                if (Float.floatToIntBits(this.l) != Float.floatToIntBits(other.l)) {
+                    return false;
+                }
+                if (Float.floatToIntBits(this.r) != Float.floatToIntBits(other.r)) {
+                    return false;
+                }
+                if (Float.floatToIntBits(this.t) != Float.floatToIntBits(other.t)) {
+                    return false;
+                }
+                if (Float.floatToIntBits(this.b) != Float.floatToIntBits(other.b)) {
+                    return false;
+                }
                 return true;
             }
 
@@ -472,8 +525,9 @@ public abstract class Source implements Serializable, Cloneable {
             }
         };
     }
-    
+
     public static class Internet extends Source {
+
         private String url;
         private String xpaht = null;
         private String title = null;
@@ -514,8 +568,7 @@ public abstract class Source implements Serializable, Cloneable {
         public String getSaved() {
             return saved;
         }
-        
-                
+
         @Override
         protected void toNode(Element element, Document document, String nameSpace) {
             if (xpaht != null) {
@@ -529,6 +582,7 @@ public abstract class Source implements Serializable, Cloneable {
     }
 
     public static class Dinosy extends Source {
+
         private String url;
         private Type type;
 
@@ -560,6 +614,7 @@ public abstract class Source implements Serializable, Cloneable {
         }
 
         public enum Type {
+
             include,
             link
         }
@@ -568,13 +623,12 @@ public abstract class Source implements Serializable, Cloneable {
     /*
      * Static elemetns
      */
-
     private static final Map<String, Constructor<?>> types = Controller.getClassMap(Source.class);
 
     public static Source getInstance(Element element) {
         return (Source) Controller.getInstance(types, element);
     }
-    
+
     public static Date parseDate(String date) {
         java.util.Calendar cal = Calendar.getInstance(new SimpleTimeZone(0, "GMT"));
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -586,7 +640,7 @@ public abstract class Source implements Serializable, Cloneable {
             return null;
         }
     }
-    
+
     public static String parseDate(Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
